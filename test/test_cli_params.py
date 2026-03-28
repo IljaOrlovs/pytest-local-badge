@@ -10,9 +10,7 @@ def tested_file(pytester):
     sources_dir = pathlib.Path(pytester.path)
     fname = sources_dir / "mymodule.py"
     with open(fname, "w") as tested_module_f:
-        tested_module_f.write(
-            textwrap.dedent(
-                """
+        tested_module_f.write(textwrap.dedent("""
                     def func1():
                         "This function will be covered."
                         return 42
@@ -20,9 +18,7 @@ def tested_file(pytester):
                     def uncovered_func2():
                         "This function will not be covered"
                         return -1
-                """
-            )
-        )
+                """))
     return fname
 
 
@@ -35,16 +31,12 @@ def tests_dir(pytester):
 def sample_pytest(tests_dir):
     test_fname = tests_dir / "test_me.py"
     with open(test_fname, "w") as test_f:
-        test_f.write(
-            textwrap.dedent(
-                """
+        test_f.write(textwrap.dedent("""
                     import mymodule
 
                     def test_simple():
                         assert mymodule.func1() == 42
-                """
-            )
-        )
+                """))
     return test_fname
 
 

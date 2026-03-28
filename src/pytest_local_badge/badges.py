@@ -1,5 +1,4 @@
 import pathlib
-import typing
 
 import pytest
 
@@ -25,7 +24,7 @@ class BadgeBase:
     def pytest_addoption(cls, option_group, my_prefix: str):
         pass
 
-    def get_colour(self, success_pct: typing.Optional[float]):
+    def get_colour(self, success_pct: float | None):
         if success_pct in (None, False):
             out = "lightgrey"
         elif success_pct >= 0.99 or (success_pct is True):

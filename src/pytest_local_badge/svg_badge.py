@@ -2,7 +2,6 @@ import textwrap
 
 from xml.sax.saxutils import escape as xml_escape
 
-
 COLORS = {
     "brightgreen": "#4c1",
     "green": "#97ca00",
@@ -27,9 +26,7 @@ def render(fobj, left_txt, right_txt, color):
     left_width = text_length(left_txt)
     right_width = text_length(right_txt) + 10
     badge_height = 20
-    fobj.write(
-        textwrap.dedent(
-            f"""
+    fobj.write(textwrap.dedent(f"""
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -79,6 +76,4 @@ def render(fobj, left_txt, right_txt, color):
                         <rect width="100%" height="100%" fill="url(#s)"/>
                     </g>
                 </svg>
-            """
-        )
-    )
+            """))
