@@ -1,4 +1,5 @@
 """Main plugin module"""
+
 import pathlib
 
 import pytest
@@ -34,7 +35,7 @@ def pytest_addoption(parser):
         default=all_badges,
         help="List of local badges to generate.",
     )
-    for (badge_name, badge_cls) in BADGES.items():
+    for badge_name, badge_cls in BADGES.items():
         badge_cls.pytest_addoption(group, badge_name)
 
 

@@ -43,7 +43,7 @@ class TestBadgeBase:
         assert badge_obj.full_output_file_name == (badge_output_dir / "UNKNOWN.svg")
 
     def test_get_colour(self, badge_obj):
-        for (pct, exp_out) in [
+        for pct, exp_out in [
             (None, "lightgrey"),
             (False, "lightgrey"),
             (True, "brightgreen"),

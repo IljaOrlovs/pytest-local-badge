@@ -33,7 +33,7 @@ class TestLocalBadgePlugin:
         mocker.patch.object(plugin, "BADGES", mock_badges)
         obj = plugin.LocalBadgePlugin(mock_cli_options)
         obj.pytest_sessionfinish(mock_session, exitstatus)
-        for (name, badge_cls_mock) in mock_badges.items():
+        for name, badge_cls_mock in mock_badges.items():
             if name in mock_cli_options.local_badge_generate:
                 badge_cls_mock.assert_called_once_with(badge_dir, mock_cli_options)
                 badge_obj = badge_cls_mock.return_value

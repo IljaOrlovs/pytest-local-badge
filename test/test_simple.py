@@ -1,4 +1,5 @@
 """Quick and dirty test"""
+
 import pathlib
 
 import pytest
@@ -13,12 +14,10 @@ def test_import():
 
 @pytest.fixture
 def simple_true_test(testdir):
-    testdir.makepyfile(
-        """
+    testdir.makepyfile("""
             def test_simple():
                 assert (1 + 1) == 2
-        """
-    )
+        """)
 
 
 @pytest.mark.usefixtures("simple_true_test")

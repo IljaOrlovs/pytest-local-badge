@@ -21,10 +21,11 @@ setuptools.setup(
         "Environment :: Plugins",
         "Framework :: Pytest",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14"
     ],
     license="MIT",
     author="Ilja Orlovs",
@@ -41,7 +42,7 @@ setuptools.setup(
     extras_require={
         "develop": [
             "black>=22.12.0",
-            "pytest>=7.1.0,<8",
+            "pytest>=8.4,<10",
             "pytest-cov",
             "pytest-mock",
             "flake8-bugbear",
@@ -52,6 +53,6 @@ setuptools.setup(
             "build",
         ]
     },
-    install_requires=["pytest>=6.1.0"],
-    python_requires=">=3.7",
+    install_requires=["pytest>=8.4"],
+    python_requires=">=3.10",
 )
