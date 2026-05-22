@@ -42,3 +42,42 @@ class TestLocalBadgePlugin:
                 )
             else:
                 assert not badge_cls_mock.called
+
+
+class TestLoadInitialConftests:
+    """Direct unit tests for the `pytest_load_initial_conftests` hook.
+
+    The pytester-driven tests in test_simple.py / test_cli_params.py cover
+    the integrated path; these cover the branching directly so coverage
+    measurement (which can't see into pytester subprocesses) catches it.
+    """
+
+    @pytest.fixture
+    def early_config(self, mocker, tmp_path):
+        cfg = mocker.MagicMock(name="early_config")
+        cfg.known_args_namespace = argparse.Namespace(
+            pytest_local_badge_enabled=True,
+            local_badge_output_dir=str(tmp_path),
+        )
+        return cfg
+
+    def test_registers_plugin_when_enabled_and_dir_set(self, early_config):
+        plugin.pytest_load_initial_conftests(early_config, parser=None, args=[])
+        early_config.pluginmanager.register.assert_called_once()
+        registered, name = early_config.pluginmanager.register.call_args.args
+        assert name == "_local_badge"
+        assert isinstance(registered, plugin.LocalBadgePlugin)
+
+    def test_no_register_when_disabled(self, early_config):
+        # `--no-local-badge` clears the enabled flag — even with output_dir set,
+        # the plugin must not register.
+        early_config.known_args_namespace.pytest_local_badge_enabled = False
+        plugin.pytest_load_initial_conftests(early_config, parser=None, args=[])
+        early_config.pluginmanager.register.assert_not_called()
+
+    def test_no_register_when_output_dir_missing(self, early_config):
+        # The default — user never passed `--local-badge-output-dir`. The
+        # plugin should stay dormant rather than write badges to nowhere.
+        early_config.known_args_namespace.local_badge_output_dir = None
+        plugin.pytest_load_initial_conftests(early_config, parser=None, args=[])
+        early_config.pluginmanager.register.assert_not_called()

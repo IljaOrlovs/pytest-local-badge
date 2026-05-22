@@ -33,6 +33,13 @@ def test_unknown_codepoint_falls_back_to_em_width():
     assert svg_badge.text_length("\U00100000") > 0
 
 
+@pytest.mark.parametrize("control_char", ["\t", "\n", "\x00", "\x7f"])
+def test_control_chars_have_zero_width(control_char):
+    # Tabs / newlines / NUL / DEL — they don't render, so they shouldn't
+    # contribute to the badge's pixel width.
+    assert svg_badge.text_length(control_char) == 0.0
+
+
 @pytest.mark.parametrize("left_text", [None, "", "hello world"])
 @pytest.mark.parametrize("right_text", [None, "", "hello world"])
 @pytest.mark.parametrize("colour", [None, "", "#fff", "lightgreenm"])

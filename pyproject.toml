@@ -66,6 +66,7 @@ dev = [
     "pytest>=8.4",
     "pytest-cov>=5.0",
     "pytest-mock>=3.14",
+    "coverage[toml]>=7.6",
     "ruff>=0.8",
     "pyright>=1.1.409",
 ]
@@ -134,5 +135,31 @@ reportAttributeAccessIssue = false
 
 [tool.pytest.ini_options]
 minversion = "8.4"
-addopts = "-v -l --color=yes --cov=pytest_local_badge --cov-report=term-missing --no-cov-on-fail --local-badge-output-dir badges/"
+# Note: `--cov` is intentionally NOT in addopts. We measure coverage by
+# wrapping pytest with `coverage run -m pytest` (run from CI / `pdm run
+# coverage`), which starts coverage before the plugin loads — otherwise
+# the plugin's module-level code is missed. `pytest --cov` is still wired
+# in via the local-badge-cov path so the coverage badge keeps rendering
+# under that wrapper.
+addopts = "-v -l --color=yes --local-badge-output-dir badges/"
 testpaths = ["test"]
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ["pytest_local_badge"]
+# `parallel` keeps the outer `coverage run` and pytest-cov's inner coverage
+# from clobbering each other's .coverage file. Combine via `coverage combine`.
+parallel = true
+
+[tool.coverage.paths]
+# Map the installed package back to the source tree so reports show
+# `src/pytest_local_badge/...` rather than `.venv/lib/.../site-packages/...`.
+source = ["src/pytest_local_badge", "*/pytest_local_badge"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_also = [
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

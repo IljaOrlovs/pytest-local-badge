@@ -49,7 +49,11 @@ def _width_of_codepoint(code_point: int) -> float:
     table = _width_table()
     lowers = _width_table_lowers()
     idx = bisect.bisect_right(lowers, code_point) - 1
-    if idx < 0:
+    if idx < 0:  # pragma: no cover
+        # Defensive: code points < 32 are caught by the control-char branch
+        # above, and the table covers everything from 32 upward, so bisect
+        # never actually returns -1 here. Keep the fallback in case the
+        # bundled table is replaced with one that starts at a higher cp.
         return _em_width()
     lo, hi, width = table[idx]
     if lo <= code_point <= hi:
