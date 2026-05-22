@@ -1,5 +1,4 @@
 import textwrap
-
 from xml.sax.saxutils import escape as xml_escape
 
 COLORS = {
@@ -26,18 +25,19 @@ def render(fobj, left_txt, right_txt, color):
     left_width = text_length(left_txt)
     right_width = text_length(right_txt) + 10
     badge_height = 20
-    fobj.write(textwrap.dedent(f"""
+    fobj.write(
+        textwrap.dedent(f"""
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     xmlns:xlink="http://www.w3.org/1999/xlink"
                     width="{left_width + right_width}"
-                    height="{ badge_height }"
+                    height="{badge_height}"
                     role="img"
                     aria-label="{xml_escape(title)}"
                 >
                     <style>
                         rect {{
-                            height: { badge_height }px;
+                            height: {badge_height}px;
                         }}
 
                         text {{
@@ -76,4 +76,5 @@ def render(fobj, left_txt, right_txt, color):
                         <rect width="100%" height="100%" fill="url(#s)"/>
                     </g>
                 </svg>
-            """))
+            """)
+    )

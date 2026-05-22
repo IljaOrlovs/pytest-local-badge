@@ -2,37 +2,56 @@ name: Release
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"
+      - 'v*.*.*'
 
 jobs:
   test:
-    uses: "./.github/workflows/main.yml"
-  publish-package:
+    uses: ./.github/workflows/main.yml
+  publish:
     needs: test
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write  # Required for PyPI OIDC trusted publishing
+      contents: write  # Required for creating GitHub Releases
     steps:
-      - uses: actions/checkout@v3
-      - name: Get Version number
-        run: |
-          export RELEASE_VERSION="${GITHUB_REF#refs/*/}"  # Generates output of the 'v0.12.9' format
-          export RELEASE_VERSION="${RELEASE_VERSION:1}"   # `:}"` -- remove the 'v' prefix
-          echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
-          echo "Release version: ${RELEASE_VERSION}"
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
         with:
-          python-version: '3.14'
+          fetch-depth: 0  # pdm-backend SCM versioning needs tag history
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: '3.13'
       - name: Build packages
+        # Pin the version explicitly from the tag. Bypasses pdm-backend's
+        # SCM dirty-tree detection, which can append a PEP-440 local
+        # segment (e.g. `+d20260521`) that PyPI rejects with 400.
         run: |
-          pip install build
-          python -m build --outdir dist/
-      - name: Publish distribution to Test PyPI
+          export PDM_BUILD_SCM_VERSION="${GITHUB_REF_NAME#v}"
+          pdm build
+      - name: Sign artifacts with Sigstore
+        uses: sigstore/gh-action-sigstore-python@v3.0.1
+        with:
+          inputs: |
+            ./dist/*.whl
+            ./dist/*.tar.gz
+      - name: Publish to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
-      - name: Publish distribution to PRODUCTION PyPI
-        # if: false
+          repository-url: https://test.pypi.org/legacy/
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          body: Release ${{ github.ref_name }}.
+          # Tags like v1.2.3rc1, v1.2.3a1, v1.2.3.dev0 → pre-release.
+          # Plain v1.2.3 → stable.
+          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'dev') }}
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/*.sigstore
+          fail_on_unmatched_files: true

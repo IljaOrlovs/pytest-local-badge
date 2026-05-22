@@ -63,7 +63,7 @@ class TestSuccess(BadgeBase):
             coverage_percentage = 0
         else:
             coverage_percentage = (total_tests - failed_tests) / total_tests
-        with open(self.full_output_file_name, "w") as fout:
+        with self.full_output_file_name.open("w") as fout:
             svg_badge.render(
                 fout,
                 left_txt="tests",
@@ -85,7 +85,7 @@ class PytestCov(BadgeBase):
                     )  # The plugin returns value as an int
                 else:
                     coverage_percentage = 0
-                with open(self.full_output_file_name, "w") as fout:
+                with self.full_output_file_name.open("w") as fout:
                     svg_badge.render(
                         fout,
                         left_txt="coverage",

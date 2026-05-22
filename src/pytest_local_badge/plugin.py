@@ -57,7 +57,6 @@ class PytestLocalBadgeError(Exception):
 class LocalBadgePlugin:
     """Generate local SVG badges."""
 
-    options = None
     out_dir: pathlib.Path
 
     def __init__(self, options):
@@ -65,7 +64,8 @@ class LocalBadgePlugin:
         self.out_dir = pathlib.Path(options.local_badge_output_dir)
         if not self.out_dir.is_dir():
             raise PytestLocalBadgeError(
-                f"Badge output dir {self.out_dir} ({self.out_dir.resolve()}) does not exist or is not a directory"
+                f"Badge output dir {self.out_dir} ({self.out_dir.resolve()}) "
+                "does not exist or is not a directory"
             )
 
     def pytest_sessionfinish(self, session, exitstatus):

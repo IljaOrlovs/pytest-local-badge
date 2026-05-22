@@ -39,7 +39,6 @@ class TestBadgeBase:
 
     @pytest.mark.parametrize("cli_override", [None, "test_out.svg"])
     def test_out_fname(self, badge_obj, badge_output_dir, cli_override):
-        cli_options.__dict__
         assert badge_obj.full_output_file_name == (badge_output_dir / "UNKNOWN.svg")
 
     def test_get_colour(self, badge_obj):
