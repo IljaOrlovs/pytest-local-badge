@@ -2,10 +2,10 @@
 <svg
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    width="85.99000000000001"
+    width="92.98"
     height="20"
     role="img"
-    aria-label="coverage: 60%"
+    aria-label="coverage: 100%"
 >
     <style>
         rect {
@@ -26,7 +26,7 @@
             fill: #010101;
         }
     </style>
-    <title>coverage: 60%</title>
+    <title>coverage: 100%</title>
     <linearGradient id="s" x2="0" y2="100%">
         <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
         <stop offset="1" stop-opacity=".1"/>
@@ -41,9 +41,9 @@
             <text x="25.085" y="10.0">coverage</text>
         </g>
         <g transform="translate(50.17 0)">
-            <rect width="35.82" fill="#dfb317"/>
-            <text x="17.91" y="10.0" class="shadow">60%</text>
-            <text x="17.91" y="10.0">60%</text>
+            <rect width="42.81" fill="#4c1"/>
+            <text x="21.405" y="10.0" class="shadow">100%</text>
+            <text x="21.405" y="10.0">100%</text>
         </g>
         <rect width="100%" height="100%" fill="url(#s)"/>
     </g>

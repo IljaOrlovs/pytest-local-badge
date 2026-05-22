@@ -122,7 +122,20 @@ Issues and PRs welcome: <https://github.com/VRGhost/pytest-local-badge>
 git clone https://github.com/VRGhost/pytest-local-badge
 cd pytest-local-badge
 pdm install
-pdm run pytest
+
+# Measure coverage of the plugin itself, then regenerate the committed
+# badges with that data. We need `coverage run` (not just `pytest --cov`)
+# because the plugin is imported by pytest *before* pytest-cov starts
+# measuring, which would otherwise leave module-level code uncounted.
+# CI enforces 100% via `--fail-under=100`.
+pdm run coverage erase
+pdm run coverage run -m pytest
+pdm run coverage combine
+pdm run coverage report -m --fail-under=100
+# Pipe the same data into pytest-cov so the coverage badge reflects the
+# real 100%, not the partial number you'd get from `pytest --cov` alone.
+pdm run pytest --cov=pytest_local_badge --cov-append
+
 pdm run ruff check ./src ./test
 pdm run pyright
 ```

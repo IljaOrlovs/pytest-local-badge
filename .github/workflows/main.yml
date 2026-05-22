@@ -35,4 +35,14 @@ jobs:
       - name: Type check (pyright)
         run: pdm run pyright
       - name: Test Python code
-        run: pdm run pytest
+        # `coverage run -m pytest` starts coverage *before* pytest loads
+        # the plugin, so module-level code (imports, class defs) gets
+        # measured. We deliberately don't pass `--cov=` here: pytest-cov
+        # would start a *second* coverage tracer and the two would fight
+        # over `.coverage`. The badge SVGs are committed in the repo —
+        # local devs regenerate them via `pytest --cov=...` directly.
+        run: |
+          pdm run coverage erase
+          pdm run coverage run -m pytest
+          pdm run coverage combine
+          pdm run coverage report -m --fail-under=100

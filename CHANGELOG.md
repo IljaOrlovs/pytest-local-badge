@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **100% test coverage** (branch + statement), enforced in CI via
+  `coverage report --fail-under=100`. Required restructuring the CI test
+  command around `coverage run -m pytest` so coverage starts before the
+  plugin loads — `pytest --cov` alone misses module-level code in
+  self-hosting pytest plugins.
 - `[cov]` install extra so `pip install "pytest-local-badge[cov]"` pulls in
   `pytest-cov` automatically.
 - Per-glyph Verdana-11 width table (from
