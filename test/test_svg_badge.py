@@ -52,9 +52,7 @@ def test_both_halves_get_horizontal_padding(mocker):
     svg_badge.render(fobj, "abc", "xyz", "brightgreen")
     written = fobj.write.call_args.args[0]
     # The two `<rect width="...">` declarations are left-half then right-half.
-    rect_widths = [
-        float(m) for m in re.findall(r'<rect width="([0-9.]+)"', written)
-    ]
+    rect_widths = [float(m) for m in re.findall(r'<rect width="([0-9.]+)"', written)]
     text_abc = svg_badge.text_length("abc")
     text_xyz = svg_badge.text_length("xyz")
     # The clip-path and gradient-overlay rects use `width="100%"` and are
