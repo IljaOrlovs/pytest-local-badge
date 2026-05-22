@@ -22,14 +22,16 @@ Shiny badges in your README are great. But the usual recipe — a hosted shield 
 
 ## Install
 
+Just the test-count badge:
+
 ```bash
 pip install pytest-local-badge
 ```
 
-For the coverage badge you also need [`pytest-cov`](https://pypi.org/project/pytest-cov/):
+With the coverage badge ([`pytest-cov`](https://pypi.org/project/pytest-cov/) pulled in automatically):
 
 ```bash
-pip install pytest-local-badge pytest-cov
+pip install "pytest-local-badge[cov]"
 ```
 
 ## Quick start

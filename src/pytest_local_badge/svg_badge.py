@@ -71,7 +71,6 @@ def text_length(text) -> float:
 
 
 def render(fobj, left_txt, right_txt, color):
-    # noqa: E501
     left_txt = str(left_txt)
     right_txt = str(right_txt)
     label_color = COLORS.get(color, color)

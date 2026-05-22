@@ -12,9 +12,10 @@ class BadgeBase:
     output_dir: pathlib.Path
 
     def __init__(self, output_dir: pathlib.Path, options):
+        # `output_dir` existence is validated upstream in
+        # `LocalBadgePlugin.__init__` (plugin.py) — no need to re-check here.
         self.options = options
         self.output_dir = output_dir
-        assert self.output_dir.is_dir(), self.output_dir
 
     @property
     def full_output_file_name(self):

@@ -46,10 +46,15 @@ classifiers = [
 ]
 dependencies = ["pytest>=8.4"]
 
+[project.optional-dependencies]
+# Install with `pip install pytest-local-badge[cov]` to get the coverage badge.
+cov = ["pytest-cov>=5.0"]
+
 [project.urls]
 Homepage = "https://github.com/VRGhost/pytest-local-badge"
 Source = "https://github.com/VRGhost/pytest-local-badge"
 Issues = "https://github.com/VRGhost/pytest-local-badge/issues"
+Changelog = "https://github.com/VRGhost/pytest-local-badge/blob/main/CHANGELOG.md"
 "Release notes" = "https://github.com/VRGhost/pytest-local-badge/releases"
 "CI" = "https://github.com/VRGhost/pytest-local-badge/actions"
 
