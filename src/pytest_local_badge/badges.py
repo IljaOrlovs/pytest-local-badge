@@ -25,9 +25,11 @@ class BadgeBase:
         pass
 
     def get_colour(self, success_pct: float | None):
-        if success_pct in (None, False):
+        # `success_pct is None` means "no data" — avoid `in (None, False)` because
+        # `0 == False` would silently grey out a legitimate 0% / all-failed result.
+        if success_pct is None:
             out = "lightgrey"
-        elif success_pct >= 0.99 or (success_pct is True):
+        elif success_pct >= 0.99:
             out = "brightgreen"
         elif success_pct >= 0.87:
             out = "green"
@@ -51,24 +53,30 @@ class TestSuccess(BadgeBase):
     output_file_name = "tests.svg"
 
     def on_sessionfinish(self, session: pytest.Session, exitstatus: int):
-        tests_success = exitstatus == 0
         total_tests = session.testscollected
         failed_tests = session.testsfailed
         succeeded_tests = max(total_tests - failed_tests, 0)
-        if failed_tests == 0 or (succeeded_tests == total_tests):
+        # `succeeded == total` covers both `failed == 0` and the degenerate
+        # `total == 0, failed > 0` case (collection errors clamp succeeded to 0).
+        if succeeded_tests == total_tests:
             right_text = f"{total_tests}"
         else:
             right_text = f"{succeeded_tests}/{total_tests}"
-        if (total_tests == 0) or not tests_success:
-            coverage_percentage = 0
+        # `None` → grey ("no data"), float ratio → coloured by pass rate.
+        # A non-zero exit code with passing tests still goes red — the suite
+        # failed even if individual cases didn't.
+        if total_tests == 0:
+            pass_ratio = None
+        elif exitstatus != 0 and failed_tests == 0:
+            pass_ratio = 0.0
         else:
-            coverage_percentage = (total_tests - failed_tests) / total_tests
+            pass_ratio = succeeded_tests / total_tests
         with self.full_output_file_name.open("w") as fout:
             svg_badge.render(
                 fout,
                 left_txt="tests",
                 right_txt=right_text,
-                color=self.get_colour(coverage_percentage),
+                color=self.get_colour(pass_ratio),
             )
 
 
@@ -79,16 +87,19 @@ class PytestCov(BadgeBase):
         if session.config.pluginmanager.hasplugin("_cov"):
             plugin = session.config.pluginmanager.getplugin("_cov")
             if plugin and plugin.cov_controller:
-                if plugin.cov_total:
-                    coverage_percentage = (
-                        plugin.cov_total / 100
-                    )  # The plugin returns value as an int
+                # cov_total is None when pytest-cov hasn't produced a report
+                # (e.g. tests errored out before collection). Treat that as
+                # "no data" → grey, distinct from a real 0% → red.
+                if plugin.cov_total is None:
+                    coverage_ratio = None
+                    right_text = "0%"
                 else:
-                    coverage_percentage = 0
+                    coverage_ratio = plugin.cov_total / 100
+                    right_text = f"{int(plugin.cov_total)}%"
                 with self.full_output_file_name.open("w") as fout:
                     svg_badge.render(
                         fout,
                         left_txt="coverage",
-                        right_txt=f"{int(coverage_percentage * 100)}%",
-                        color=self.get_colour(coverage_percentage),
+                        right_txt=right_text,
+                        color=self.get_colour(coverage_ratio),
                     )

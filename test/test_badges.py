@@ -41,20 +41,30 @@ class TestBadgeBase:
     def test_out_fname(self, badge_obj, badge_output_dir, cli_override):
         assert badge_obj.full_output_file_name == (badge_output_dir / "UNKNOWN.svg")
 
-    def test_get_colour(self, badge_obj):
-        for pct, exp_out in [
-            (None, "lightgrey"),
-            (False, "lightgrey"),
-            (True, "brightgreen"),
+    @pytest.mark.parametrize(
+        "pct, exp_out",
+        [
+            (None, "lightgrey"),  # "no data" sentinel
             (1, "brightgreen"),
+            (0.99, "brightgreen"),
             (0.9, "green"),
+            (0.87, "green"),
             (0.78, "yellowgreen"),
+            (0.75, "yellowgreen"),
             (0.6, "yellow"),
+            (0.5, "yellow"),
             (0.4, "orange"),
+            (0.3, "orange"),
             (0.1, "red"),
+            # Regression: `0 in (None, False)` was True, so 0% silently
+            # rendered grey instead of red. Both int and float forms.
+            (0, "red"),
+            (0.0, "red"),
             (-1, "red"),
-        ]:
-            assert badge_obj.get_colour(pct) == exp_out
+        ],
+    )
+    def test_get_colour(self, badge_obj, pct, exp_out):
+        assert badge_obj.get_colour(pct) == exp_out
 
 
 class TestSuccessBadge:
@@ -92,6 +102,41 @@ class TestSuccessBadge:
             right_txt=exp_right_txt,
             color=mocker.ANY,
         )
+
+    @pytest.mark.parametrize(
+        "rc, testscollected, testsfailed, exp_color",
+        [
+            # No tests collected → "no data" → grey, regardless of rc.
+            (0, 0, 0, "lightgrey"),
+            (1, 0, 0, "lightgrey"),
+            # All tests pass cleanly → brightgreen.
+            (0, 10, 0, "brightgreen"),
+            (0, 1, 0, "brightgreen"),
+            # All tests fail → red (regression test for the `0 == False` bug).
+            (1, 10, 10, "red"),
+            # Partial failures → coloured by pass ratio.
+            (1, 10, 1, "green"),  # 9/10 = 0.9
+            (1, 10, 2, "yellowgreen"),  # 8/10 = 0.8
+            (1, 4, 3, "red"),  # 1/4 = 0.25
+            # Passing tests but non-zero rc (e.g. plugin error) → red.
+            (1, 5, 0, "red"),
+        ],
+    )
+    def test_badge_colour(
+        self,
+        mock_badge_render,
+        badge_obj,
+        mock_session,
+        rc,
+        testscollected,
+        testsfailed,
+        exp_color,
+    ):
+        mock_session.testscollected = testscollected
+        mock_session.testsfailed = testsfailed
+        badge_obj.on_sessionfinish(mock_session, rc)
+        actual_color = mock_badge_render.call_args.kwargs["color"]
+        assert actual_color == exp_color
 
 
 class TestPytestCov:
@@ -131,12 +176,44 @@ class TestPytestCov:
         mock_plugin.cov_total = None
 
         badge_obj.on_sessionfinish(mock_session, 0)
+        # `None` cov_total means pytest-cov produced no report — render grey,
+        # not red. (Regression: previously conflated with 0% via `0 == False`.)
         mock_badge_render.assert_called_once_with(
-            mocker.ANY, color=mocker.ANY, left_txt=mocker.ANY, right_txt="0%"
+            mocker.ANY, color="lightgrey", left_txt=mocker.ANY, right_txt="0%"
         )
 
     def test_100_cov_total(self, mocker, mock_badge_render, badge_obj, mock_session):
         badge_obj.on_sessionfinish(mock_session, 0)
         mock_badge_render.assert_called_once_with(
-            mocker.ANY, color=mocker.ANY, left_txt=mocker.ANY, right_txt="100%"
+            mocker.ANY, color="brightgreen", left_txt=mocker.ANY, right_txt="100%"
+        )
+
+    @pytest.mark.parametrize(
+        "cov_total, exp_right_txt, exp_color",
+        [
+            (None, "0%", "lightgrey"),
+            (0, "0%", "red"),
+            (10, "10%", "red"),
+            (35, "35%", "orange"),
+            (60, "60%", "yellow"),
+            (80, "80%", "yellowgreen"),
+            (90, "90%", "green"),
+            (100, "100%", "brightgreen"),
+        ],
+    )
+    def test_cov_total_colour(
+        self,
+        mocker,
+        mock_badge_render,
+        badge_obj,
+        mock_session,
+        mock_plugin,
+        cov_total,
+        exp_right_txt,
+        exp_color,
+    ):
+        mock_plugin.cov_total = cov_total
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY, color=exp_color, left_txt="coverage", right_txt=exp_right_txt
         )

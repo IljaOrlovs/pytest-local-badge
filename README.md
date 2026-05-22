@@ -36,10 +36,6 @@ Here are the options available at the moment:
                             The directory to save local badges to.
     --local-badge-generate={cov,status} [{cov,status} ...]
                             List of local badges to generate.
-    --local-badge-status-file-name=LOCAL_BADGE_STATUS_FILE_NAME
-                            Desired output file name
-    --local-badge-cov-file-name=LOCAL_BADGE_COV_FILE_NAME
-                            Desired output file name
 
 # Supported badges:
 
