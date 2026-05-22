@@ -2,10 +2,10 @@
 <svg
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    width="70.0"
+    width="57.64"
     height="20"
     role="img"
-    aria-label="tests: 114"
+    aria-label="tests: 118"
 >
     <style>
         rect {
@@ -26,7 +26,7 @@
             fill: #010101;
         }
     </style>
-    <title>tests: 114</title>
+    <title>tests: 118</title>
     <linearGradient id="s" x2="0" y2="100%">
         <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
         <stop offset="1" stop-opacity=".1"/>
@@ -36,14 +36,14 @@
     </clipPath>
     <g clip-path="url(#r)" >
         <g>
-            <rect width="37.5" fill="#555"/>
-            <text x="18.75" y="10.0" class="shadow">tests</text>
-            <text x="18.75" y="10.0">tests</text>
+            <rect width="26.67" fill="#555"/>
+            <text x="13.335" y="10.0" class="shadow">tests</text>
+            <text x="13.335" y="10.0">tests</text>
         </g>
-        <g transform="translate(37.5 0)">
-            <rect width="32.5" fill="#4c1"/>
-            <text x="16.25" y="10.0" class="shadow">114</text>
-            <text x="16.25" y="10.0">114</text>
+        <g transform="translate(26.67 0)">
+            <rect width="30.97" fill="#4c1"/>
+            <text x="15.485" y="10.0" class="shadow">118</text>
+            <text x="15.485" y="10.0">118</text>
         </g>
         <rect width="100%" height="100%" fill="url(#s)"/>
     </g>

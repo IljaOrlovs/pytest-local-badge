@@ -1,0 +1,14 @@
+pytest-local-badge
+Copyright (c) Ilja Orlovs
+
+This product bundles `src/pytest_local_badge/verdana_11px_normal.json`,
+a Verdana-11px character-width table originally produced by the
+`anafanafo` project:
+
+    https://github.com/metabolize/anafanafo
+    Copyright (c) 2018 Metabolize LLC
+    Licensed under the MIT License.
+
+The MIT licence requires the copyright notice above to be preserved in
+all copies or substantial portions of the file. The file is bundled
+unmodified.

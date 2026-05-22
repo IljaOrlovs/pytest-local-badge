@@ -1,4 +1,8 @@
+import bisect
+import importlib.resources
+import json
 import textwrap
+from functools import cache
 from xml.sax.saxutils import escape as xml_escape
 
 COLORS = {
@@ -12,8 +16,58 @@ COLORS = {
 }
 
 
-def text_length(text):
-    return 7.5 * len(text or "")
+# Verdana 11px character widths, originally measured by the `anafanafo` project
+# (https://github.com/metabolize/anafanafo, MIT). Format: a list of
+# [lo, hi, width] triples, sorted by `lo`, covering ranges of Unicode code
+# points. shields.io uses the same table for its badge layout, so widths
+# computed here match shields' rendered output.
+@cache
+def _width_table() -> list[tuple[int, int, float]]:
+    raw = (
+        importlib.resources.files(__package__)
+        .joinpath("verdana_11px_normal.json")
+        .read_text(encoding="utf-8")
+    )
+    return [tuple(entry) for entry in json.loads(raw)]
+
+
+@cache
+def _width_table_lowers() -> list[int]:
+    return [entry[0] for entry in _width_table()]
+
+
+@cache
+def _em_width() -> float:
+    """Fallback glyph width — used for code points not in the table."""
+    return _width_of_codepoint(ord("m")) or 7.0
+
+
+def _width_of_codepoint(code_point: int) -> float:
+    # Control characters render as zero width — matches anafanafo's behaviour.
+    if code_point <= 31 or code_point == 127:
+        return 0.0
+    table = _width_table()
+    lowers = _width_table_lowers()
+    idx = bisect.bisect_right(lowers, code_point) - 1
+    if idx < 0:
+        return _em_width()
+    lo, hi, width = table[idx]
+    if lo <= code_point <= hi:
+        return width
+    return _em_width()
+
+
+def text_length(text) -> float:
+    """Pixel width of `text` rendered in 11px Verdana.
+
+    Uses the same per-glyph width table shields.io uses, so badges look
+    consistent with the rest of the ecosystem and don't mis-size on narrow
+    (`iIl1`) or wide (`WMm`) characters the way a flat `7.5 * len(text)`
+    estimate would.
+    """
+    if not text:
+        return 0.0
+    return sum(_width_of_codepoint(ord(ch)) for ch in str(text))
 
 
 def render(fobj, left_txt, right_txt, color):

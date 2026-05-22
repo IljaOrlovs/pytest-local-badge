@@ -125,6 +125,14 @@ pdm run ruff check ./src ./test
 pdm run pyright
 ```
 
+## Acknowledgements
+
+The bundled `verdana_11px_normal.json` character-width table comes from
+[anafanafo](https://github.com/metabolize/anafanafo) (MIT). It's the same
+table [shields.io](https://shields.io) uses to size their badges, so locally
+generated badges line up visually with their hosted siblings. See
+[NOTICE](NOTICE) for attribution details.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
