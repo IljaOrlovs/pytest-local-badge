@@ -2,7 +2,7 @@
 <svg
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    width="92.98"
+    width="102.98"
     height="20"
     role="img"
     aria-label="coverage: 100%"
@@ -36,11 +36,11 @@
     </clipPath>
     <g clip-path="url(#r)" >
         <g>
-            <rect width="50.17" fill="#555"/>
-            <text x="25.085" y="10.0" class="shadow">coverage</text>
-            <text x="25.085" y="10.0">coverage</text>
+            <rect width="60.17" fill="#555"/>
+            <text x="30.085" y="10.0" class="shadow">coverage</text>
+            <text x="30.085" y="10.0">coverage</text>
         </g>
-        <g transform="translate(50.17 0)">
+        <g transform="translate(60.17 0)">
             <rect width="42.81" fill="#4c1"/>
             <text x="21.405" y="10.0" class="shadow">100%</text>
             <text x="21.405" y="10.0">100%</text>

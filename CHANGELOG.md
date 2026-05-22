@@ -59,6 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   versus hosted shield services, and a documented colour scale.
 
 ### Fixed
+- **Badge width**: previously only the *right* half of a badge had
+  horizontal text padding, so labels visibly crowded the left edge and
+  badges came out ~10 px narrower than the shields.io equivalent. Both
+  halves now get 5 px on each side of the text, so widths match shields
+  within a pixel. Existing committed `*.svg` files will show a one-time
+  diff the next time they're regenerated.
 - **Colour bug**: `get_colour(0)` was returning `"lightgrey"` instead of
   `"red"` because `0 in (None, False)` evaluates true in Python
   (`False == 0`). All-failed test suites and 0% coverage now render red as

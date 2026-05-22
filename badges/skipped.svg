@@ -2,7 +2,7 @@
 <svg
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    width="59.35"
+    width="69.35"
     height="20"
     role="img"
     aria-label="skipped: 0"
@@ -36,11 +36,11 @@
     </clipPath>
     <g clip-path="url(#r)" >
         <g>
-            <rect width="42.36" fill="#555"/>
-            <text x="21.18" y="10.0" class="shadow">skipped</text>
-            <text x="21.18" y="10.0">skipped</text>
+            <rect width="52.36" fill="#555"/>
+            <text x="26.18" y="10.0" class="shadow">skipped</text>
+            <text x="26.18" y="10.0">skipped</text>
         </g>
-        <g transform="translate(42.36 0)">
+        <g transform="translate(52.36 0)">
             <rect width="16.990000000000002" fill="#4c1"/>
             <text x="8.495000000000001" y="10.0" class="shadow">0</text>
             <text x="8.495000000000001" y="10.0">0</text>

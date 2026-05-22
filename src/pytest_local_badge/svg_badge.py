@@ -5,6 +5,12 @@ import textwrap
 from functools import cache
 from xml.sax.saxutils import escape as xml_escape
 
+# Horizontal padding (in px) added to each half of the badge — 5px on
+# either side of the text. Matches shields.io's badge geometry so locally
+# generated badges visually line up with their hosted siblings.
+_HORIZONTAL_PADDING = 10
+
+
 COLORS = {
     "brightgreen": "#4c1",
     "green": "#97ca00",
@@ -79,8 +85,8 @@ def render(fobj, left_txt, right_txt, color):
     right_txt = str(right_txt)
     label_color = COLORS.get(color, color)
     title = f"{left_txt}: {right_txt}"
-    left_width = text_length(left_txt)
-    right_width = text_length(right_txt) + 10
+    left_width = text_length(left_txt) + _HORIZONTAL_PADDING
+    right_width = text_length(right_txt) + _HORIZONTAL_PADDING
     badge_height = 20
     fobj.write(
         textwrap.dedent(f"""
