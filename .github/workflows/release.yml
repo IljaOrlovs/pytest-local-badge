@@ -39,8 +39,17 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          # Skip attestations here — they'd leave `.publish.attestation`
+          # files in `dist/`, which the next publish step then refuses to
+          # overwrite ("distributions already have publish attestations").
+          # Test PyPI is just a smoke test for the upload pipeline; the
+          # canonical sigstore attestations are generated on PyPI below.
+          attestations: false
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        # `attestations: true` is the default (v1.10+) — PyPI gets a
+        # PEP-740-style sigstore-backed publish attestation alongside the
+        # uploaded artifacts.
       # Now sign the same artifacts standalone so we can attach the
       # `.sigstore.json` bundles to the GitHub Release for downstream
       # offline verification. This runs *after* both publishes precisely
