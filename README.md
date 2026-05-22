@@ -4,6 +4,9 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/pytest-local-badge.svg)](https://pypi.org/project/pytest-local-badge/)
 [![CI](https://github.com/VRGhost/pytest-local-badge/actions/workflows/main.yml/badge.svg)](https://github.com/VRGhost/pytest-local-badge/actions/workflows/main.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+### Our badges:
+
 ![Tests](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/tests.svg)
 ![Coverage](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/coverage.svg)
 ![Skipped](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/skipped.svg)
