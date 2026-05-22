@@ -9,6 +9,10 @@ from . import badges
 BADGES = {
     "status": badges.TestSuccess,
     "cov": badges.PytestCov,
+    "skipped": badges.Skipped,
+    "xfailed": badges.XFailed,
+    "warnings": badges.Warnings,
+    "duration": badges.Duration,
 }
 
 

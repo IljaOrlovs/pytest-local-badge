@@ -217,3 +217,336 @@ class TestPytestCov:
         mock_badge_render.assert_called_once_with(
             mocker.ANY, color=exp_color, left_txt="coverage", right_txt=exp_right_txt
         )
+
+
+# ------------------------------------------------------------------------
+# Tier-1 badges (skipped / xfailed / warnings / duration). They share a
+# `terminalreporter` plugin lookup, so a common fixture builder helps.
+# ------------------------------------------------------------------------
+
+
+def _stub_terminalreporter(
+    mocker,
+    session,
+    stats=None,
+    legacy_starttime=None,
+    modern_elapsed_seconds=None,
+):
+    """Wire a fake `terminalreporter` plugin onto `session`.
+
+    Pytest exposes session start time differently across versions, so the
+    stub can be told to populate either:
+      - `_sessionstarttime` (legacy, pre-8.x): a `float` from `time.time()`.
+      - `_session_start.elapsed().seconds` (modern): a `timing.Instant`.
+    By default both attributes are absent, which models a reporter that
+    doesn't expose timing at all (`Duration` should bail silently).
+    """
+    reporter = mocker.MagicMock(name="mock-terminalreporter")
+    reporter.stats = stats or {}
+    # MagicMock auto-creates any attribute access, which would defeat the
+    # defensive `getattr(..., None)` checks. Force them missing by default.
+    del reporter._sessionstarttime
+    del reporter._session_start
+    if legacy_starttime is not None:
+        reporter._sessionstarttime = legacy_starttime
+    if modern_elapsed_seconds is not None:
+        instant = mocker.MagicMock(name="mock-timing-instant")
+        instant.elapsed.return_value.seconds = modern_elapsed_seconds
+        reporter._session_start = instant
+    session.config.pluginmanager.getplugin.side_effect = lambda name: (
+        reporter if name == "terminalreporter" else None
+    )
+    return reporter
+
+
+class TestSkipped:
+    @pytest.fixture
+    def badge_obj(self, badge_output_dir, cli_options):
+        return badges.Skipped(badge_output_dir, cli_options)
+
+    def test_no_terminalreporter_is_silent(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # `-p no:terminalreporter` runs — the badge should skip rendering
+        # rather than crash.
+        mock_session.config.pluginmanager.getplugin.return_value = None
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "total, skipped, exp_right, exp_color",
+        [
+            # No tests collected — "no data" → grey.
+            (0, 0, "0", "lightgrey"),
+            # No skips → brightgreen.
+            (10, 0, "0", "brightgreen"),
+            # Half the suite skipped → yellow (ratio 0.5).
+            (10, 5, "5", "yellow"),
+            # Everything skipped → red (ratio 0).
+            (5, 5, "5", "red"),
+        ],
+    )
+    def test_renders(
+        self,
+        mocker,
+        mock_badge_render,
+        badge_obj,
+        mock_session,
+        total,
+        skipped,
+        exp_right,
+        exp_color,
+    ):
+        mock_session.testscollected = total
+        _stub_terminalreporter(
+            mocker, mock_session, stats={"skipped": [object()] * skipped}
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY, left_txt="skipped", right_txt=exp_right, color=exp_color
+        )
+
+
+class TestXFailed:
+    @pytest.fixture
+    def badge_obj(self, badge_output_dir, cli_options):
+        return badges.XFailed(badge_output_dir, cli_options)
+
+    def test_no_terminalreporter_is_silent(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        mock_session.config.pluginmanager.getplugin.return_value = None
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "total, xfailed, exp_right, exp_color",
+        [
+            (0, 0, "0", "lightgrey"),
+            (10, 0, "0", "brightgreen"),
+            (10, 5, "5", "yellow"),
+            (3, 3, "3", "red"),
+        ],
+    )
+    def test_renders(
+        self,
+        mocker,
+        mock_badge_render,
+        badge_obj,
+        mock_session,
+        total,
+        xfailed,
+        exp_right,
+        exp_color,
+    ):
+        mock_session.testscollected = total
+        _stub_terminalreporter(
+            mocker, mock_session, stats={"xfailed": [object()] * xfailed}
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY, left_txt="xfailed", right_txt=exp_right, color=exp_color
+        )
+
+
+class TestWarnings:
+    @pytest.fixture
+    def badge_obj(self, badge_output_dir, cli_options):
+        return badges.Warnings(badge_output_dir, cli_options)
+
+    def test_no_terminalreporter_is_silent(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        mock_session.config.pluginmanager.getplugin.return_value = None
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "count, exp_color",
+        [
+            (0, "brightgreen"),  # threshold edge: 0
+            (1, "green"),  # transitions into green at 1
+            (5, "green"),  # threshold edge: 5
+            (6, "yellow"),  # transitions into yellow at 6
+            (20, "yellow"),  # threshold edge: 20
+            (21, "orange"),
+            (50, "orange"),  # threshold edge: 50
+            (51, "red"),
+            (9999, "red"),
+        ],
+    )
+    def test_colour_thresholds(
+        self,
+        mocker,
+        mock_badge_render,
+        badge_obj,
+        mock_session,
+        count,
+        exp_color,
+    ):
+        _stub_terminalreporter(
+            mocker, mock_session, stats={"warnings": [object()] * count}
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY, left_txt="warnings", right_txt=str(count), color=exp_color
+        )
+
+
+class TestDuration:
+    @pytest.fixture
+    def badge_obj(self, badge_output_dir, cli_options):
+        return badges.Duration(badge_output_dir, cli_options)
+
+    def test_no_terminalreporter_is_silent(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        mock_session.config.pluginmanager.getplugin.return_value = None
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
+    def test_no_starttime_is_silent(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # Terminalreporter present but with neither timing attribute — e.g.
+        # an unusual pytest fork or a custom replacement. Render nothing.
+        _stub_terminalreporter(mocker, mock_session)
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
+    def test_modern_instant_without_elapsed_method_is_silent(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # `_session_start` exists but isn't a `timing.Instant` — defensive
+        # fallback should return None rather than crash.
+        _stub_terminalreporter(mocker, mock_session)
+        # Inject a non-Instant object (no `elapsed` method).
+        mocker.patch.object(
+            mock_session.config.pluginmanager.getplugin("terminalreporter"),
+            "_session_start",
+            object(),
+            create=True,
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
+    # Two-axis parametrization: every elapsed value is rendered via both the
+    # legacy `_sessionstarttime` path and the modern `_session_start.elapsed()`
+    # path, proving both surfaces produce the same badge.
+    @pytest.mark.parametrize("path", ["legacy", "modern"])
+    @pytest.mark.parametrize(
+        "elapsed, exp_right, exp_color",
+        [
+            (0.5, "0.5s", "brightgreen"),
+            (10, "10.0s", "brightgreen"),  # edge
+            (15, "15.0s", "green"),
+            (30, "30.0s", "green"),  # edge
+            (45, "45.0s", "yellowgreen"),
+            (75, "1m 15s", "yellowgreen"),  # crosses the seconds→minutes formatter
+            (120, "2m 0s", "yellowgreen"),  # edge
+            (180, "3m 0s", "yellow"),
+            (600, "10m 0s", "yellow"),  # edge
+            (900, "15m 0s", "orange"),
+            (1800, "30m 0s", "orange"),  # edge
+            (5400, "1h 30m", "red"),  # crosses the minutes→hours formatter
+        ],
+    )
+    def test_renders(
+        self,
+        mocker,
+        mock_badge_render,
+        badge_obj,
+        mock_session,
+        path,
+        elapsed,
+        exp_right,
+        exp_color,
+    ):
+        if path == "legacy":
+            starttime = 1_000_000.0
+            mocker.patch(
+                "pytest_local_badge.badges.time.time",
+                return_value=starttime + elapsed,
+            )
+            _stub_terminalreporter(mocker, mock_session, legacy_starttime=starttime)
+        else:
+            _stub_terminalreporter(mocker, mock_session, modern_elapsed_seconds=elapsed)
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY, left_txt="duration", right_txt=exp_right, color=exp_color
+        )
+
+    @pytest.mark.parametrize(
+        "elapsed, budget, exp_color",
+        [
+            # budget = 60s. Boundaries: brightgreen ≤6, green ≤18, yg ≤30,
+            # yellow ≤48, orange ≤60, red > 60.
+            (1, 60, "brightgreen"),
+            (6, 60, "brightgreen"),  # edge
+            (10, 60, "green"),
+            (18, 60, "green"),  # edge
+            (25, 60, "yellowgreen"),
+            (30, 60, "yellowgreen"),  # edge
+            (40, 60, "yellow"),
+            (48, 60, "yellow"),  # edge
+            (55, 60, "orange"),
+            (60, 60, "orange"),  # exactly at budget = orange
+            (61, 60, "red"),  # just over budget = red
+            (120, 60, "red"),  # double budget = red
+            # Same proportional model with a 10-minute budget.
+            (10, 600, "brightgreen"),
+            (60, 600, "brightgreen"),  # edge (10% of 600)
+            (180, 600, "green"),
+            (601, 600, "red"),
+        ],
+    )
+    def test_proportional_thresholds(
+        self,
+        mocker,
+        mock_badge_render,
+        badge_obj,
+        mock_session,
+        cli_options,
+        elapsed,
+        budget,
+        exp_color,
+    ):
+        # Inject the CLI option as it would appear after pytest parses
+        # `--local-badge-duration-max=<budget>`.
+        cli_options.local_badge_duration_max = budget
+        _stub_terminalreporter(mocker, mock_session, modern_elapsed_seconds=elapsed)
+        badge_obj.on_sessionfinish(mock_session, 0)
+        actual_color = mock_badge_render.call_args.kwargs["color"]
+        assert actual_color == exp_color
+
+    @pytest.mark.parametrize("invalid_budget", [0, -1, -1000.0])
+    def test_non_positive_budget_falls_back_to_absolute(
+        self,
+        mocker,
+        mock_badge_render,
+        badge_obj,
+        mock_session,
+        cli_options,
+        invalid_budget,
+    ):
+        # A budget of zero would divide by zero; a negative budget is
+        # nonsense. Either case should fall back to the absolute scale
+        # rather than crashing.
+        cli_options.local_badge_duration_max = invalid_budget
+        _stub_terminalreporter(mocker, mock_session, modern_elapsed_seconds=5)
+        badge_obj.on_sessionfinish(mock_session, 0)
+        # 5s under absolute scale → brightgreen (≤10s).
+        actual_color = mock_badge_render.call_args.kwargs["color"]
+        assert actual_color == "brightgreen"
+
+    def test_pytest_addoption_registers_max_flag(self, mocker):
+        # `Duration.pytest_addoption` is supposed to wire up the
+        # `--local-badge-duration-max` flag. Verify the call shape.
+        group = mocker.MagicMock(name="option-group")
+        badges.Duration.pytest_addoption(group, my_prefix="duration")
+        group.addoption.assert_called_once()
+        args, kwargs = group.addoption.call_args
+        assert args == ("--local-badge-duration-max",)
+        assert kwargs["type"] is float
+        assert kwargs["default"] is None
+        assert kwargs["metavar"] == "SECONDS"

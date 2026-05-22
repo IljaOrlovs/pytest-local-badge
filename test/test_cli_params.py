@@ -60,3 +60,23 @@ def test_default_behaviour(pytester, tests_dir, no_cov):
         assert not (badges_dir / "coverage.svg").exists()
     else:
         assert (badges_dir / "coverage.svg").is_file()
+
+
+def test_duration_max_flag_is_recognised(pytester, tests_dir):
+    """End-to-end: `--local-badge-duration-max` must be a real flag that
+    pytest accepts and pipes through into the duration badge."""
+    badges_dir = pathlib.Path(pytester.mkdir("badges"))
+    result = pytester.runpytest(
+        "--no-cov",
+        # An impossibly tight budget (1ms) — any non-trivial test run will
+        # blow past it, so the duration badge must render red.
+        "--local-badge-duration-max=0.001",
+        "--local-badge-generate=duration",
+        "--local-badge-output-dir",
+        badges_dir,
+        tests_dir,
+    )
+    assert result.ret == 0
+    duration_svg = (badges_dir / "duration.svg").read_text()
+    # Red is the colour shields uses for failed/over-budget.
+    assert "#e05d44" in duration_svg, "expected red badge after blowing tiny budget"

@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Four new badges** built on pytest's own session/terminalreporter
+  state, no new runtime deps:
+  - `skipped` — count of `@pytest.mark.skip` tests, colour-graded by the
+    fraction of the suite that actually ran.
+  - `xfailed` — count of expected-failure (`@pytest.mark.xfail`) tests,
+    same colour model.
+  - `warnings` — count of warnings raised during the session. 0 is
+    brightgreen; anything above escalates through green / yellow / orange
+    / red as it climbs.
+  - `duration` — total wall-clock time formatted as `4.2s` / `1m 23s` /
+    `1h 30m`, colour-graded against absolute thresholds (≤10s → bright
+    green, >30min → red). Pass `--local-badge-duration-max=SECONDS` to
+    switch to a proportional scale tied to your own budget — e.g.
+    `-max=60` puts the red line at 60 s and scales the other colours
+    accordingly.
+- Per-badge `pytest_addoption` extensibility hook (previously a `pass`)
+  is now actively used by `Duration` and available for downstream badge
+  classes to register their own CLI flags.
 - **100% test coverage** (branch + statement), enforced in CI via
   `coverage report --fail-under=100`. Required restructuring the CI test
   command around `coverage run -m pytest` so coverage starts before the

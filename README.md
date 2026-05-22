@@ -6,6 +6,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Tests](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/tests.svg)
 ![Coverage](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/coverage.svg)
+![Skipped](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/skipped.svg)
+![XFailed](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/xfailed.svg)
+![Warnings](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/warnings.svg)
+![Duration](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/duration.svg)
 
 > **Self-hosted pytest status and coverage badges.** No shields.io, no Codecov, no third-party uptime to depend on — just SVG files committed alongside your code.
 
@@ -73,8 +77,14 @@ addopts = "--cov=my_package --local-badge-output-dir badges/"
 ```
 --no-local-badge                 Disable the plugin for this run.
 --local-badge-output-dir DIR     Where to write the SVGs. (Required to activate.)
---local-badge-generate {cov,status} [{cov,status} ...]
-                                 Which badges to generate. Defaults to both.
+--local-badge-generate {cov,duration,skipped,status,warnings,xfailed} [...]
+                                 Which badges to generate. Defaults to all of them.
+--local-badge-duration-max SECONDS
+                                 Duration "budget" for the `duration` badge. When
+                                 set, colour thresholds scale proportionally — e.g.
+                                 `--local-badge-duration-max=60` gives brightgreen
+                                 ≤ 6 s, orange ≤ 60 s, red > 60 s. Without it, the
+                                 default absolute scale applies.
 ```
 
 ## Badge colour scale
@@ -99,8 +109,18 @@ Both badges colour-grade by ratio (pass rate or coverage):
 |------|------|-------|
 | `status` | `tests.svg` | Total tests collected, or `passed/total` when some failed. |
 | `cov` | `coverage.svg` | `pytest-cov` line coverage as a percentage. Requires `pytest-cov`. |
+| `skipped` | `skipped.svg` | Count of `@pytest.mark.skip` / `pytest.skip(...)` tests. Colours by the fraction of the suite that actually ran. |
+| `xfailed` | `xfailed.svg` | Count of expected-failure (`@pytest.mark.xfail`) tests. |
+| `warnings` | `warnings.svg` | Number of warnings raised during the run. Colour-graded by absolute count (0 → green, anything else escalates fast). |
+| `duration` | `duration.svg` | Total test session wall-clock time (`4.2s`, `1m 23s`, `1h 30m`). Colours by absolute thresholds by default, or by `--local-badge-duration-max=SECONDS` when you set a budget. |
 
-Use `--local-badge-generate status` (or `cov`) to render just one.
+Pick which ones to render with `--local-badge-generate`, e.g.:
+
+```bash
+pytest --local-badge-output-dir badges/ --local-badge-generate status cov warnings
+```
+
+By default *all* badges are generated.
 
 ## How it compares
 
