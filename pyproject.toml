@@ -51,12 +51,12 @@ dependencies = ["pytest>=8.4"]
 cov = ["pytest-cov>=5.0"]
 
 [project.urls]
-Homepage = "https://github.com/VRGhost/pytest-local-badge"
-Source = "https://github.com/VRGhost/pytest-local-badge"
-Issues = "https://github.com/VRGhost/pytest-local-badge/issues"
-Changelog = "https://github.com/VRGhost/pytest-local-badge/blob/main/CHANGELOG.md"
-"Release notes" = "https://github.com/VRGhost/pytest-local-badge/releases"
-"CI" = "https://github.com/VRGhost/pytest-local-badge/actions"
+Homepage = "https://github.com/IljaOrlovs/pytest-local-badge"
+Source = "https://github.com/IljaOrlovs/pytest-local-badge"
+Issues = "https://github.com/IljaOrlovs/pytest-local-badge/issues"
+Changelog = "https://github.com/IljaOrlovs/pytest-local-badge/blob/main/CHANGELOG.md"
+"Release notes" = "https://github.com/IljaOrlovs/pytest-local-badge/releases"
+"CI" = "https://github.com/IljaOrlovs/pytest-local-badge/actions"
 
 [project.entry-points.pytest11]
 local_badge = "pytest_local_badge.plugin"

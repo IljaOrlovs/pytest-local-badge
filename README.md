@@ -2,17 +2,17 @@
 
 [![PyPI version](https://badge.fury.io/py/pytest-local-badge.svg)](https://pypi.org/project/pytest-local-badge/)
 [![Python versions](https://img.shields.io/pypi/pyversions/pytest-local-badge.svg)](https://pypi.org/project/pytest-local-badge/)
-[![CI](https://github.com/VRGhost/pytest-local-badge/actions/workflows/main.yml/badge.svg)](https://github.com/VRGhost/pytest-local-badge/actions/workflows/main.yml)
+[![CI](https://github.com/IljaOrlovs/pytest-local-badge/actions/workflows/main.yml/badge.svg)](https://github.com/IljaOrlovs/pytest-local-badge/actions/workflows/main.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ### Our badges:
 
-![Tests](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/tests.svg)
-![Coverage](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/coverage.svg)
-![Skipped](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/skipped.svg)
-![XFailed](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/xfailed.svg)
-![Warnings](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/warnings.svg)
-![Duration](https://raw.githubusercontent.com/VRGhost/pytest-local-badge/main/badges/duration.svg)
+![Tests](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/tests.svg)
+![Coverage](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/coverage.svg)
+![Skipped](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/skipped.svg)
+![XFailed](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/xfailed.svg)
+![Warnings](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/warnings.svg)
+![Duration](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/duration.svg)
 
 > **Self-hosted pytest status and coverage badges.** No shields.io, no Codecov, no third-party uptime to depend on — just SVG files committed alongside your code.
 
@@ -139,10 +139,10 @@ If you're already happy with a hosted service, keep using it. If "another SaaS d
 
 ## Contributing
 
-Issues and PRs welcome: <https://github.com/VRGhost/pytest-local-badge>
+Issues and PRs welcome: <https://github.com/IljaOrlovs/pytest-local-badge>
 
 ```bash
-git clone https://github.com/VRGhost/pytest-local-badge
+git clone https://github.com/IljaOrlovs/pytest-local-badge
 cd pytest-local-badge
 pdm install
 

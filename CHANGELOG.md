@@ -88,8 +88,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.2] and earlier
 - Tagged releases preceding this changelog. See the
-  [git history](https://github.com/VRGhost/pytest-local-badge/commits/main)
+  [git history](https://github.com/IljaOrlovs/pytest-local-badge/commits/main)
   for details.
 
-[Unreleased]: https://github.com/VRGhost/pytest-local-badge/compare/v1.0.3...HEAD
-[1.0.3]: https://github.com/VRGhost/pytest-local-badge/releases/tag/v1.0.3
+[Unreleased]: https://github.com/IljaOrlovs/pytest-local-badge/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/IljaOrlovs/pytest-local-badge/releases/tag/v1.0.3
