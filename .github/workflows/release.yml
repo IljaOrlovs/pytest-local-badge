@@ -29,18 +29,28 @@ jobs:
         run: |
           export PDM_BUILD_SCM_VERSION="${GITHUB_REF_NAME#v}"
           pdm build
-      - name: Sign artifacts with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v3.0.1
-        with:
-          inputs: |
-            ./dist/*.whl
-            ./dist/*.tar.gz
+      # Publish FIRST. `pypa/gh-action-pypi-publish` runs `twine check` on
+      # every file in `dist/`, and if `.sigstore.json` signatures were
+      # already there it would fail with "Unknown distribution format".
+      # The publish action handles PyPI-side sigstore attestations
+      # internally (via `attestations: true`, the default in v1.10+), so
+      # no separate signing step is needed *for PyPI*.
       - name: Publish to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+      # Now sign the same artifacts standalone so we can attach the
+      # `.sigstore.json` bundles to the GitHub Release for downstream
+      # offline verification. This runs *after* both publishes precisely
+      # so twine never sees these files.
+      - name: Sign artifacts with Sigstore
+        uses: sigstore/gh-action-sigstore-python@v3.0.1
+        with:
+          inputs: |
+            ./dist/*.whl
+            ./dist/*.tar.gz
       - name: Extract release notes from CHANGELOG
         id: changelog
         uses: mindsers/changelog-reader-action@v2
@@ -61,5 +71,5 @@ jobs:
           files: |
             dist/*.whl
             dist/*.tar.gz
-            dist/*.sigstore
+            dist/*.sigstore.json
           fail_on_unmatched_files: true
