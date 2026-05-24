@@ -1,7 +1,7 @@
 [project]
 name = "pytest-local-badge"
 dynamic = ["version"]
-description = "Pytest plugin that writes self-hosted SVG status and coverage badges to your repo — no third-party shield service required."
+description = "Pytest plugin that writes self-hosted SVG badges (tests, coverage, skipped, xfailed, warnings, duration) to your repo — no third-party shield service required."
 authors = [
     {name = "Ilja Orlovs", email = "vrghost@gmail.com"},
 ]
