@@ -1,6 +1,7 @@
 """Main plugin module"""
 
 import pathlib
+import warnings
 
 import pytest
 
@@ -66,13 +67,15 @@ class LocalBadgePlugin:
     def __init__(self, options):
         self.options = options
         self.out_dir = pathlib.Path(options.local_badge_output_dir)
-        if not self.out_dir.is_dir():
-            raise PytestLocalBadgeError(
-                f"Badge output dir {self.out_dir} ({self.out_dir.resolve()}) "
-                "does not exist or is not a directory"
-            )
 
     def pytest_sessionfinish(self, session, exitstatus):
+        if not self.out_dir.is_dir():
+            warnings.warn(
+                f"Badge output dir {self.out_dir} ({self.out_dir.resolve()}) "
+                "does not exist or is not a directory; skipping badge generation",
+                stacklevel=1,
+            )
+            return
         for enabled_badge_name in self.options.local_badge_generate:
             badge_cls = BADGES[enabled_badge_name]
             badge = badge_cls(self.out_dir, self.options)

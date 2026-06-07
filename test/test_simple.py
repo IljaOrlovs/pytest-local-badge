@@ -25,12 +25,13 @@ def test_no_output_dir(testdir):
     result = testdir.runpytest(
         "--local-badge-output-dir", pathlib.Path(str(testdir)) / "idontexist"
     )
-    result.stderr.fnmatch_lines(
+    result.stdout.fnmatch_lines(
         [
-            "* Badge output dir * does not exist or is not a directory*",
+            "*Badge output dir * does not exist or is not a directory*",
         ]
     )
-    assert result.ret == 1
+    assert result.ret == 0
+    result.assert_outcomes(passed=1)
 
 
 @pytest.mark.usefixtures("simple_true_test")
