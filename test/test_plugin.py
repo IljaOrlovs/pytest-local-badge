@@ -18,10 +18,11 @@ class TestLocalBadgePlugin:
             local_badge_generate=["test-badge-1", "test-badge-2"],
         )
 
-    def test_no_badge_dir(self, mock_cli_options):
+    def test_no_badge_dir(self, mocker, mock_cli_options):
         mock_cli_options.local_badge_output_dir = "idontexist"
-        with pytest.raises(plugin.PytestLocalBadgeError):
-            plugin.LocalBadgePlugin(mock_cli_options)
+        obj = plugin.LocalBadgePlugin(mock_cli_options)
+        with pytest.warns(UserWarning, match="does not exist or is not a directory"):
+            obj.pytest_sessionfinish(mocker.MagicMock(), 0)
 
     def test_badge_calls(self, mocker, badge_dir, mock_cli_options):
         mock_session = mocker.MagicMock(name="mock-session")
