@@ -1,4 +1,5 @@
 import argparse
+import json
 import pathlib
 
 import pytest
@@ -1015,3 +1016,232 @@ class TestOperatingSystemBadge:
         _stub_metadata(mocker, classifiers=["Topic :: Software Development"])
         badge_obj.on_sessionfinish(mock_session, 0)
         mock_badge_render.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Custom badges
+# ---------------------------------------------------------------------------
+
+
+class TestParseCustomValue:
+    @pytest.mark.parametrize(
+        "raw, exp_message, exp_colour",
+        [
+            ("abc123", "abc123", "blue"),
+            # Trailing palette name is treated as a colour.
+            ("abc123:red", "abc123", "red"),
+            ("hello world:brightgreen", "hello world", "brightgreen"),
+            # Hex literals (3/6/8 digits) also count as colours.
+            ("v1.2.3:#ff8800", "v1.2.3", "#ff8800"),
+            ("foo:#abc", "foo", "#abc"),
+            ("bar:#abcdef12", "bar", "#abcdef12"),
+            # Trailing `:NOT_A_COLOR` is part of the message — the
+            # whole timestamp survives, colour defaults to blue.
+            ("2026-06-08T14:32:00Z", "2026-06-08T14:32:00Z", "blue"),
+            # URL with port and path — the trailing segment isn't a
+            # palette name, so the entire URL stays the message.
+            (
+                "https://example.com:8080/ok",
+                "https://example.com:8080/ok",
+                "blue",
+            ),
+            # Whitespace around the value and the colour is trimmed.
+            ("  padded  :  red  ", "padded", "red"),
+        ],
+    )
+    def test_parses(self, raw, exp_message, exp_colour):
+        assert badges.parse_custom_value(raw) == (exp_message, exp_colour)
+
+
+class TestParseCustomCli:
+    def test_label_message_only(self):
+        assert badges.parse_custom_cli("commit=abc123") == badges.CustomSpec(
+            label="commit", message="abc123", colour="blue"
+        )
+
+    def test_label_message_colour(self):
+        assert badges.parse_custom_cli("commit=abc123:red") == badges.CustomSpec(
+            label="commit", message="abc123", colour="red"
+        )
+
+    def test_message_with_equals_sign(self):
+        # Only the first `=` separates label from message; later ones
+        # belong to the value (e.g. base64-ish or query-string-y data).
+        assert badges.parse_custom_cli("payload=k=v&x=y") == badges.CustomSpec(
+            label="payload", message="k=v&x=y", colour="blue"
+        )
+
+    def test_missing_equals_errors(self):
+        with pytest.raises(badges.CustomSpecError, match="must be 'LABEL=MESSAGE"):
+            badges.parse_custom_cli("just-a-value")
+
+    def test_empty_label_errors(self):
+        with pytest.raises(badges.CustomSpecError, match="empty LABEL"):
+            badges.parse_custom_cli("=value")
+
+
+class TestCustomSpecSlug:
+    @pytest.mark.parametrize(
+        "label, exp_slug",
+        [
+            ("commit", "commit"),
+            ("Build SHA", "build-sha"),
+            ("My/Weird Label!", "my-weird-label"),
+            # Runs of non-alphanumerics collapse to a single dash.
+            ("a  b__c", "a-b-c"),
+            # Leading/trailing separators are stripped.
+            ("---trim---", "trim"),
+        ],
+    )
+    def test_label_drives_slug_by_default(self, label, exp_slug):
+        spec = badges.CustomSpec(label=label, message="x")
+        assert spec.derived_slug == exp_slug
+
+    def test_explicit_slug_overrides_label(self):
+        spec = badges.CustomSpec(label="Build SHA", message="x", slug="sha")
+        assert spec.derived_slug == "sha"
+
+    def test_explicit_slug_is_also_canonicalised(self):
+        # The file form lets users set `slug` directly, but it goes
+        # through the same canonicalisation as a label-derived slug —
+        # so users can't sneak `..` or capital letters into a filename.
+        spec = badges.CustomSpec(label="x", message="y", slug="My Slug")
+        assert spec.derived_slug == "my-slug"
+
+
+class TestParseCustomFile:
+    def test_json_array(self, tmp_path):
+        path = tmp_path / "badges.json"
+        path.write_text(
+            json.dumps(
+                [
+                    {"label": "commit", "message": "abc1234"},
+                    {
+                        "label": "build SHA",
+                        "message": "def5678",
+                        "color": "#ff8800",
+                        "slug": "sha",
+                    },
+                ]
+            )
+        )
+        specs = badges.parse_custom_file(path)
+        assert specs == [
+            badges.CustomSpec(label="commit", message="abc1234", colour="blue"),
+            badges.CustomSpec(
+                label="build SHA",
+                message="def5678",
+                colour="#ff8800",
+                slug="sha",
+            ),
+        ]
+
+    def test_jsonl_with_comments_and_blank_lines(self, tmp_path):
+        path = tmp_path / "badges.jsonl"
+        path.write_text(
+            "# comment line\n"
+            "\n"
+            '{"label": "commit", "message": "abc"}\n'
+            "   # indented comment\n"
+            '{"label": "deploy", "message": "yesterday", "color": "yellow"}\n'
+        )
+        specs = badges.parse_custom_file(path)
+        assert [s.label for s in specs] == ["commit", "deploy"]
+        assert specs[1].colour == "yellow"
+
+    def test_top_level_dict_errors(self, tmp_path):
+        # Valid JSON but wrong shape — fails immediately rather than
+        # falling through to the JSONL parser, which would mis-report
+        # the entire file as one bad JSONL line.
+        path = tmp_path / "badges.json"
+        path.write_text(json.dumps({"label": "x", "message": "y"}))
+        with pytest.raises(
+            badges.CustomSpecError, match="top-level JSON must be a list"
+        ):
+            badges.parse_custom_file(path)
+
+    def test_jsonl_bad_line_reports_lineno(self, tmp_path):
+        path = tmp_path / "badges.jsonl"
+        path.write_text('{"label": "ok", "message": "x"}\nthis is not json at all\n')
+        with pytest.raises(badges.CustomSpecError, match=r":2: malformed JSON"):
+            badges.parse_custom_file(path)
+
+    def test_row_missing_label(self, tmp_path):
+        # Use the JSON-array form so field-level validation fires (a
+        # single-line top-level object trips the "must be a list" check
+        # first, which is its own test below).
+        path = tmp_path / "badges.json"
+        path.write_text(json.dumps([{"message": "x"}]))
+        with pytest.raises(badges.CustomSpecError, match="non-empty 'label'"):
+            badges.parse_custom_file(path)
+
+    def test_row_message_not_string(self, tmp_path):
+        path = tmp_path / "badges.json"
+        path.write_text(json.dumps([{"label": "x", "message": 42}]))
+        with pytest.raises(badges.CustomSpecError, match="string 'message'"):
+            badges.parse_custom_file(path)
+
+    def test_row_not_a_dict(self, tmp_path):
+        path = tmp_path / "badges.json"
+        path.write_text("[1, 2, 3]")
+        with pytest.raises(badges.CustomSpecError, match="must be a JSON object"):
+            badges.parse_custom_file(path)
+
+    def test_row_color_wrong_type(self, tmp_path):
+        path = tmp_path / "badges.json"
+        path.write_text(json.dumps([{"label": "x", "message": "y", "color": 7}]))
+        with pytest.raises(badges.CustomSpecError, match="'color' must be a string"):
+            badges.parse_custom_file(path)
+
+    def test_row_slug_wrong_type(self, tmp_path):
+        path = tmp_path / "badges.json"
+        path.write_text(json.dumps([{"label": "x", "message": "y", "slug": 7}]))
+        with pytest.raises(badges.CustomSpecError, match="'slug' must be a string"):
+            badges.parse_custom_file(path)
+
+    def test_top_level_non_list_non_dict_errors(self, tmp_path):
+        # E.g. `null` or `42` at the top level — valid JSON, wrong
+        # shape. Same error path as the dict case.
+        path = tmp_path / "badges.json"
+        path.write_text("null")
+        with pytest.raises(
+            badges.CustomSpecError, match="top-level JSON must be a list"
+        ):
+            badges.parse_custom_file(path)
+
+
+class TestCustomBadge:
+    @pytest.fixture
+    def spec(self):
+        return badges.CustomSpec(label="commit", message="abc1234", colour="blue")
+
+    def test_renders_to_slug_filename(
+        self, mocker, mock_badge_render, badge_output_dir, cli_options, spec
+    ):
+        badge = badges.CustomBadge(badge_output_dir, cli_options, spec)
+        assert badge.full_output_file_name == (badge_output_dir / "commit.svg")
+        badge.on_sessionfinish(mocker.MagicMock(), 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="commit",
+            right_txt="abc1234",
+            color="blue",
+        )
+
+    def test_explicit_slug_changes_filename_only(
+        self, mocker, mock_badge_render, badge_output_dir, cli_options
+    ):
+        spec = badges.CustomSpec(
+            label="Build SHA", message="abc", colour="#ff8800", slug="sha"
+        )
+        badge = badges.CustomBadge(badge_output_dir, cli_options, spec)
+        assert badge.full_output_file_name == (badge_output_dir / "sha.svg")
+        badge.on_sessionfinish(mocker.MagicMock(), 0)
+        # Label is shown as-is (case + space preserved), slug only
+        # affects the file path.
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="Build SHA",
+            right_txt="abc",
+            color="#ff8800",
+        )

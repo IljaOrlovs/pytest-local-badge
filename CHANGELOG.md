@@ -5,6 +5,44 @@ All notable changes to **pytest-local-badge** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Internal: `badges.py` split into a package.** What used to be one
+  ~950-line module is now `badges/{base,session,package,custom}.py`
+  (~30 / 280 / 360 / 220 lines respectively). The public surface is
+  unchanged — `from pytest_local_badge.badges import TestSuccess` (and
+  every other class) still works, and the test suite needed no edits
+  to follow the rename. Each submodule is also importable directly
+  (`from pytest_local_badge.badges.custom import CustomSpec`) for
+  downstream code that prefers the explicit path.
+
+### Added
+- **Custom badges** for arbitrary `LABEL | MESSAGE` values that aren't
+  pytest stats or package classifiers — git SHAs, deploy timestamps, CI-
+  computed numbers. Three input channels feeding the same shape:
+  - `--local-badge-custom 'LABEL=MESSAGE[:COLOR]'` (repeatable) for
+    shell-driven one-offs.
+  - `--local-badge-custom-file PATH` (repeatable) reading a JSON list or
+    JSONL file — the parser tries `json.loads` over the whole file first
+    and falls back to line-by-line on `JSONDecodeError`. JSONL supports
+    `#`-prefixed comments and blank lines. Each entry takes
+    `{label, message, color?, slug?}`; the optional `slug` overrides the
+    filename derivation.
+  - Environment variables: any `PYTEST_LOCAL_BADGE_CUSTOM_<LABEL>` is
+    read at session-finish, with `_` → `-` in the suffix. Drop into a
+    GitHub Actions `env:` block to add badges without touching the
+    pytest invocation.
+  - Merge order: env → file → CLI (last source wins per slug). Trailing
+    `:COLOR` is only treated as a colour when COLOR is a palette name or
+    `#hex` literal — so values containing `:` (timestamps, URLs) survive
+    untouched.
+  - Empty messages are skipped silently by default; pass
+    `--local-badge-custom-strict` to make them errors.
+  - Reserved-slug collisions with built-in badges (`tests`, `coverage`,
+    `skipped`, `xfailed`, `warnings`, `duration`, `last-run`) raise a
+    hard error rather than silently overwriting.
+
 ## [1.2.1] — 2026-06-08
 
 ### Added
