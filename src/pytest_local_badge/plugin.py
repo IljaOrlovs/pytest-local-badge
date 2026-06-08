@@ -22,6 +22,12 @@ PACKAGE_BADGES = {
     "python": badges.PythonVersions,
     "license": badges.License,
     "private": badges.PrivatePackage,
+    "version": badges.Version,
+    "maturity": badges.DevelopmentStatus,
+    "typed": badges.Typed,
+    "implementation": badges.Implementation,
+    "framework": badges.Framework,
+    "requires-python": badges.RequiresPython,
 }
 
 
@@ -50,14 +56,14 @@ def pytest_addoption(parser):
     )
     group.addoption(
         "--local-badge-package",
-        nargs="+",
+        action="append",
         default=[],
         metavar="PACKAGE",
         help=(
-            "Installed distribution name(s) to read metadata from for the "
-            "package-classifier badges (python/license/private). Pass one or "
-            "more — each gets its own set of badges, prefixed with the "
-            "package's canonical name."
+            "Installed distribution name to read metadata from for the "
+            "package-classifier badges (python/license/private/...). Repeat "
+            "for multiple packages — each gets its own set of badges, "
+            "prefixed with the package's canonical name."
         ),
     )
     for badge_name, badge_cls in {**BADGES, **PACKAGE_BADGES}.items():

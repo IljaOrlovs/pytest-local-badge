@@ -408,34 +408,37 @@ class PythonVersions(PackageBadgeBase):
 class License(PackageBadgeBase):
     """License badge from `License :: ...` classifiers.
 
-    Trims the trailing " License" word so "MIT License" renders as "MIT".
-    If multiple license classifiers are present (rare), the first wins.
+    Captures the final trove segment and strips a trailing " License"
+    suffix so "MIT License" renders as "MIT". If multiple license
+    classifiers are present (rare), the first match wins.
     """
 
     badge_name = "license"
+    _RE = re.compile(
+        r"""^
+            \s*
+            License \s+ :: \s+
+            (?: .+ \s+ :: \s+ )?      # optional intermediate trove path
+            (.+?)                     # final segment
+            (?: \s+ License )?        # optional " License" suffix
+            \s*
+        $""",
+        re.VERBOSE | re.IGNORECASE,
+    )
 
     def render_from_metadata(self, md, classifiers):
-        label = self._extract(classifiers)
-        if not label:
-            return
-        with self.full_output_file_name.open("w") as fout:
-            svg_badge.render(
-                fout,
-                left_txt="License",
-                right_txt=label,
-                color="yellow",
-            )
-
-    @staticmethod
-    def _extract(classifiers):
         for c in classifiers:
-            if not c.startswith("License :: "):
+            match = self._RE.match(c)
+            if not match:
                 continue
-            # Last segment of the trove path is the human-readable name,
-            # e.g. "License :: OSI Approved :: MIT License" -> "MIT License".
-            tail = c.rsplit(" :: ", 1)[-1].strip()
-            return tail.removesuffix(" License").strip() or tail
-        return None
+            with self.full_output_file_name.open("w") as fout:
+                svg_badge.render(
+                    fout,
+                    left_txt="License",
+                    right_txt=match.group(1),
+                    color="yellow",
+                )
+            return
 
 
 class PrivatePackage(PackageBadgeBase):
@@ -456,4 +459,209 @@ class PrivatePackage(PackageBadgeBase):
                 left_txt="package",
                 right_txt="private",
                 color="red",
+            )
+
+
+class Version(PackageBadgeBase):
+    """Package version from the `Version` metadata field.
+
+    Doesn't read classifiers — `md["Version"]` is always set on an
+    installed distribution. Mirrors shields.io's `pypi/v/<pkg>` badge.
+    """
+
+    badge_name = "version"
+
+    def render_from_metadata(self, md, classifiers):
+        version = md["Version"]
+        if not version:
+            return
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="version",
+                right_txt=str(version),
+                color="blue",
+            )
+
+
+class DevelopmentStatus(PackageBadgeBase):
+    """Project maturity from the `Development Status :: N - Name` classifier.
+
+    Colour grades by the trove digit: planning/pre-alpha → red, alpha →
+    orange, beta → yellow, stable → brightgreen, mature → green, inactive
+    → grey. The right-hand text is the human-readable suffix lower-cased
+    (e.g. "5 - Production/Stable" → "production/stable").
+    """
+
+    badge_name = "maturity"
+    _RE = re.compile(
+        r"""^
+            \s*
+            Development \s+ Status \s+ :: \s+
+            (\d+)
+            \s+ - \s+
+            .+
+            \s*
+        $""",
+        re.VERBOSE | re.IGNORECASE,
+    )
+    # Trove digit → (right-text, colour). Right text matches the
+    # classifier's own wording rather than collapsing "Production/Stable"
+    # to "stable"; the slash is fine in our 11px Verdana.
+    _STATUS_TABLE = {
+        "1": ("planning", "red"),
+        "2": ("pre-alpha", "red"),
+        "3": ("alpha", "orange"),
+        "4": ("beta", "yellow"),
+        "5": ("production/stable", "brightgreen"),
+        "6": ("mature", "green"),
+        "7": ("inactive", "lightgrey"),
+    }
+
+    def render_from_metadata(self, md, classifiers):
+        for c in classifiers:
+            match = self._RE.match(c)
+            if not match:
+                continue
+            entry = self._STATUS_TABLE.get(match.group(1).lower())
+            if entry is None:
+                continue
+            right_txt, colour = entry
+            with self.full_output_file_name.open("w") as fout:
+                svg_badge.render(
+                    fout,
+                    left_txt="status",
+                    right_txt=right_txt,
+                    color=colour,
+                )
+            return
+
+
+class Typed(PackageBadgeBase):
+    """Renders only when the `Typing :: Typed` classifier is set.
+
+    Conventional marker that the package ships a `py.typed` marker file
+    and is annotated end-to-end.
+    """
+
+    badge_name = "typed"
+
+    def render_from_metadata(self, md, classifiers):
+        if "Typing :: Typed" not in classifiers:
+            return
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="typed",
+                right_txt="py.typed",
+                color="blue",
+            )
+
+
+class Implementation(PackageBadgeBase):
+    """Pipe-separated list of supported Python implementations.
+
+    Reads `Programming Language :: Python :: Implementation :: X`
+    (CPython, PyPy, Jython, IronPython). Dedupes while preserving the
+    classifier order.
+    """
+
+    badge_name = "implementation"
+    _RE = re.compile(
+        r"""^
+            \s*
+            Programming \s+ Language \s+ :: \s+ Python \s+ :: \s+
+            Implementation \s+ :: \s+
+            (.+?)
+            \s*
+        $""",
+        re.VERBOSE | re.IGNORECASE,
+    )
+
+    def render_from_metadata(self, md, classifiers):
+        impls = []
+        for c in classifiers:
+            match = self._RE.match(c)
+            if not match:
+                continue
+            name = match.group(1)
+            if name not in impls:
+                impls.append(name)
+        if not impls:
+            return
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="implementation",
+                right_txt=" | ".join(impls),
+                color="blue",
+            )
+
+
+class Framework(PackageBadgeBase):
+    """Pipe-separated list of frameworks the package targets.
+
+    Reads `Framework :: X` (and ignores `Framework :: X :: Y` sub-version
+    rows — keeps only the top-level framework name, deduplicated). A
+    project tagged `Framework :: Django` and `Framework :: Django :: 4.2`
+    surfaces as a single `Django`.
+    """
+
+    badge_name = "framework"
+    # `[^:]+?` for the captured name keeps it inside one trove segment; the
+    # optional ` :: rest` lets us swallow sub-version rows like
+    # `Framework :: Django :: 4.2` and still capture just "Django".
+    _RE = re.compile(
+        r"""^
+            \s*
+            Framework \s+ :: \s+
+            ([^:]+?)
+            (?: \s+ :: \s+ .+ )?
+            \s*
+        $""",
+        re.VERBOSE | re.IGNORECASE,
+    )
+
+    def render_from_metadata(self, md, classifiers):
+        frameworks = []
+        for c in classifiers:
+            match = self._RE.match(c)
+            if not match:
+                continue
+            name = match.group(1)
+            if name not in frameworks:
+                frameworks.append(name)
+        if not frameworks:
+            return
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="framework",
+                right_txt=" | ".join(frameworks),
+                color="blue",
+            )
+
+
+class RequiresPython(PackageBadgeBase):
+    """Renders the `Requires-Python` constraint as-is (e.g. `>=3.10`).
+
+    Distinct from `PythonVersions`: this one reads the version spec the
+    package declared (one line, exact constraint), whereas
+    `PythonVersions` enumerates trove classifiers. Some projects only
+    set one or the other — the user can disable whichever doesn't apply
+    via `--local-badge-generate`.
+    """
+
+    badge_name = "requires-python"
+
+    def render_from_metadata(self, md, classifiers):
+        spec = md["Requires-Python"]
+        if not spec:
+            return
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="python",
+                right_txt=str(spec).strip(),
+                color="blue",
             )

@@ -2,10 +2,10 @@
 <svg
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    width="89.81"
+    width="150.53"
     height="20"
     role="img"
-    aria-label="duration: 0.9s"
+    aria-label="status: production/stable"
 >
     <style>
         rect {
@@ -26,7 +26,7 @@
             fill: #010101;
         }
     </style>
-    <title>duration: 0.9s</title>
+    <title>status: production/stable</title>
     <linearGradient id="s" x2="0" y2="100%">
         <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
         <stop offset="1" stop-opacity=".1"/>
@@ -36,17 +36,17 @@
     </clipPath>
     <g clip-path="url(#r)" >
         <g>
-            <rect width="56.1" fill="#555"/>
+            <rect width="43.69" fill="#555"/>
             <g transform="scale(.1)">
-                <text x="280.5" y="100" textLength="461" class="shadow">duration</text>
-                <text x="280.5" y="100" textLength="461">duration</text>
+                <text x="218.45" y="100" textLength="336.9" class="shadow">status</text>
+                <text x="218.45" y="100" textLength="336.9">status</text>
             </g>
         </g>
-        <g transform="translate(56.1 0)">
-            <rect width="33.71" fill="#4c1"/>
+        <g transform="translate(43.69 0)">
+            <rect width="106.84" fill="#4c1"/>
             <g transform="scale(.1)">
-                <text x="168.55" y="100" textLength="237.1" class="shadow">0.9s</text>
-                <text x="168.55" y="100" textLength="237.1">0.9s</text>
+                <text x="534.2" y="100" textLength="968.4" class="shadow">production/stable</text>
+                <text x="534.2" y="100" textLength="968.4">production/stable</text>
             </g>
         </g>
         <rect width="100%" height="100%" fill="url(#s)"/>
