@@ -44,6 +44,26 @@ class TestLocalBadgePlugin:
             else:
                 assert not badge_cls_mock.called
 
+    def test_package_badge_filtering(self, mocker, badge_dir, mock_cli_options):
+        # Covers the `if badge_name not in enabled: continue` branch for
+        # package badges: pass a `--local-badge-package` but a generate
+        # list that only mentions one of two package badges. The omitted
+        # one must not be instantiated.
+        mock_cli_options.local_badge_generate = ["pkg-yes"]
+        mock_cli_options.local_badge_package = ["some-dist"]
+        mock_pkg_badges = {
+            "pkg-yes": mocker.MagicMock(name="pkg-yes-mock"),
+            "pkg-no": mocker.MagicMock(name="pkg-no-mock"),
+        }
+        mocker.patch.object(plugin, "BADGES", {})
+        mocker.patch.object(plugin, "PACKAGE_BADGES", mock_pkg_badges)
+        obj = plugin.LocalBadgePlugin(mock_cli_options)
+        obj.pytest_sessionfinish(mocker.MagicMock(name="session"), 0)
+        mock_pkg_badges["pkg-yes"].assert_called_once_with(
+            badge_dir, mock_cli_options, "some-dist"
+        )
+        mock_pkg_badges["pkg-no"].assert_not_called()
+
 
 class TestLoadInitialConftests:
     """Direct unit tests for the `pytest_load_initial_conftests` hook.

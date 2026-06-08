@@ -822,6 +822,19 @@ class TestDevelopmentStatusBadge:
         badge_obj.on_sessionfinish(mock_session, 0)
         mock_badge_render.assert_not_called()
 
+    def test_unknown_trove_digit_is_skipped(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # A digit outside the canonical 1-7 table (e.g. a future "8" or a
+        # malformed classifier) is skipped rather than crashing — the loop
+        # moves on, and if nothing else matches, no badge is rendered.
+        _stub_metadata(
+            mocker,
+            classifiers=["Development Status :: 99 - Speculative"],
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
 
 class TestTypedBadge:
     @pytest.fixture
