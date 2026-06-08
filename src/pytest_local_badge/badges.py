@@ -1,3 +1,4 @@
+import datetime
 import importlib.metadata
 import pathlib
 import re
@@ -215,6 +216,28 @@ class Warnings(BadgeBase):
             if count <= upper:
                 return colour
         return "red"
+
+
+class LastRun(BadgeBase):
+    """UTC timestamp of when the test session finished.
+
+    Informational badge — useful as a freshness signal in READMEs so
+    readers can spot stale badge files at a glance. Rendered as
+    `YYYY-MM-DD HH:MM UTC`.
+    """
+
+    output_file_name = "last-run.svg"
+
+    def on_sessionfinish(self, session: pytest.Session, exitstatus: int):
+        now = datetime.datetime.now(datetime.timezone.utc)
+        right = now.strftime("%Y-%m-%d %H:%M UTC")
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="last run",
+                right_txt=right,
+                color="blue",
+            )
 
 
 class Duration(BadgeBase):
@@ -663,5 +686,51 @@ class RequiresPython(PackageBadgeBase):
                 fout,
                 left_txt="python",
                 right_txt=str(spec).strip(),
+                color="blue",
+            )
+
+
+class OperatingSystem(PackageBadgeBase):
+    """Pipe-separated list of supported operating systems from classifiers.
+
+    Reads `Operating System :: ...` trove rows and keeps the final
+    segment (so `Operating System :: POSIX :: Linux` → "Linux",
+    `Operating System :: MacOS` → "MacOS"). The catch-all
+    `Operating System :: OS Independent` collapses to a single
+    "OS Independent" badge value and short-circuits any other OS rows —
+    a project that declares it has already said "anywhere".
+    """
+
+    badge_name = "os"
+    _RE = re.compile(
+        r"""^
+            \s*
+            Operating \s+ System \s+ :: \s+
+            (?: .+ \s+ :: \s+ )?      # optional intermediate trove path
+            (.+?)
+            \s*
+        $""",
+        re.VERBOSE | re.IGNORECASE,
+    )
+
+    def render_from_metadata(self, md, classifiers):
+        names = []
+        for c in classifiers:
+            match = self._RE.match(c)
+            if not match:
+                continue
+            name = match.group(1)
+            if name.lower() == "os independent":
+                names = ["OS Independent"]
+                break
+            if name not in names:
+                names.append(name)
+        if not names:
+            return
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="OS",
+                right_txt=" | ".join(names),
                 color="blue",
             )

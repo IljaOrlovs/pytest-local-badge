@@ -13,6 +13,7 @@ BADGES = {
     "skipped": badges.Skipped,
     "xfailed": badges.XFailed,
     "warnings": badges.Warnings,
+    "last-run": badges.LastRun,
     "duration": badges.Duration,
 }
 
@@ -28,6 +29,7 @@ PACKAGE_BADGES = {
     "implementation": badges.Implementation,
     "framework": badges.Framework,
     "requires-python": badges.RequiresPython,
+    "os": badges.OperatingSystem,
 }
 
 

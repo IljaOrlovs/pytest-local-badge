@@ -393,6 +393,34 @@ class TestWarnings:
         )
 
 
+class TestLastRun:
+    @pytest.fixture
+    def badge_obj(self, badge_output_dir, cli_options):
+        return badges.LastRun(badge_output_dir, cli_options)
+
+    def test_renders_utc_timestamp(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # Freeze the clock so the right-hand text is deterministic.
+        import datetime as _dt
+
+        fixed = _dt.datetime(2026, 3, 14, 9, 26, tzinfo=_dt.timezone.utc)
+
+        class _FixedDateTime(_dt.datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return fixed if tz is None else fixed.astimezone(tz)
+
+        mocker.patch.object(badges.datetime, "datetime", _FixedDateTime)
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="last run",
+            right_txt="2026-03-14 09:26 UTC",
+            color="blue",
+        )
+
+
 class TestDuration:
     @pytest.fixture
     def badge_obj(self, badge_output_dir, cli_options):
@@ -918,5 +946,59 @@ class TestRequiresPythonBadge:
         # Packages without a Requires-Python constraint skip the badge
         # rather than rendering an empty value.
         _stub_metadata(mocker, classifiers=[])
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
+
+class TestOperatingSystemBadge:
+    @pytest.fixture
+    def badge_obj(self, badge_output_dir, cli_options):
+        return badges.OperatingSystem(badge_output_dir, cli_options, "demo-pkg")
+
+    def test_keeps_final_segment_and_dedupes(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        _stub_metadata(
+            mocker,
+            classifiers=[
+                "Operating System :: POSIX :: Linux",
+                "Operating System :: MacOS",
+                "Operating System :: Microsoft :: Windows",
+                "Operating System :: POSIX :: Linux",  # dup
+            ],
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="OS",
+            right_txt="Linux | MacOS | Windows",
+            color="blue",
+        )
+
+    def test_os_independent_short_circuits(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # A project that says "OS Independent" alongside specific OS rows
+        # collapses to just "OS Independent" — the catch-all wins.
+        _stub_metadata(
+            mocker,
+            classifiers=[
+                "Operating System :: POSIX :: Linux",
+                "Operating System :: OS Independent",
+                "Operating System :: MacOS",
+            ],
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="OS",
+            right_txt="OS Independent",
+            color="blue",
+        )
+
+    def test_no_render_without_os_classifier(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        _stub_metadata(mocker, classifiers=["Topic :: Software Development"])
         badge_obj.on_sessionfinish(mock_session, 0)
         mock_badge_render.assert_not_called()

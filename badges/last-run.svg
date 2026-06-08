@@ -2,10 +2,10 @@
 <svg
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    width="67.64"
+    width="191.3"
     height="20"
     role="img"
-    aria-label="tests: 227"
+    aria-label="last run: 2026-06-08 10:06 UTC"
 >
     <style>
         rect {
@@ -26,7 +26,7 @@
             fill: #010101;
         }
     </style>
-    <title>tests: 227</title>
+    <title>last run: 2026-06-08 10:06 UTC</title>
     <linearGradient id="s" x2="0" y2="100%">
         <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
         <stop offset="1" stop-opacity=".1"/>
@@ -36,17 +36,17 @@
     </clipPath>
     <g clip-path="url(#r)" >
         <g>
-            <rect width="36.67" fill="#555"/>
+            <rect width="52.17" fill="#555"/>
             <g transform="scale(.1)">
-                <text x="183.35" y="100" textLength="266.7" class="shadow">tests</text>
-                <text x="183.35" y="100" textLength="266.7">tests</text>
+                <text x="260.85" y="100" textLength="421.7" class="shadow">last run</text>
+                <text x="260.85" y="100" textLength="421.7">last run</text>
             </g>
         </g>
-        <g transform="translate(36.67 0)">
-            <rect width="30.97" fill="#4c1"/>
+        <g transform="translate(52.17 0)">
+            <rect width="139.13" fill="#007ec6"/>
             <g transform="scale(.1)">
-                <text x="154.85" y="100" textLength="209.7" class="shadow">227</text>
-                <text x="154.85" y="100" textLength="209.7">227</text>
+                <text x="695.65" y="100" textLength="1291.3" class="shadow">2026-06-08 10:06 UTC</text>
+                <text x="695.65" y="100" textLength="1291.3">2026-06-08 10:06 UTC</text>
             </g>
         </g>
         <rect width="100%" height="100%" fill="url(#s)"/>

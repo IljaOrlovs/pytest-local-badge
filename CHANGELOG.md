@@ -34,6 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     set; otherwise nothing.
   - `private` — renders `package | private` (red) only when `Private ::
     Do Not Upload` is set; otherwise nothing.
+  - **`last-run` session badge** — UTC timestamp of when the session
+    finished, formatted `YYYY-MM-DD HH:MM UTC`. Informational (blue) —
+    useful as a freshness signal in READMEs.
+  - **`os` package-metadata badge** — pipe-joined supported operating
+    systems from `Operating System :: ...` classifiers (final trove
+    segment kept and deduplicated). The catch-all
+    `Operating System :: OS Independent` collapses to a single
+    "OS Independent" value and short-circuits any other OS rows. Blue.
 - `--local-badge-package PACKAGE` CLI option (repeatable via
   `action="append"`).
 - `blue` (`#007ec6`) added to the badge colour palette.
