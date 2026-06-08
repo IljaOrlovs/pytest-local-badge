@@ -17,12 +17,12 @@
             dominant-baseline: middle;
             text-anchor: middle;
             font-family: Verdana,Geneva,DejaVu Sans,sans-serif;
-            font-size: 11.4px;
+            font-size: 110px;
             fill: #fff;
         }
 
         .shadow {
-            transform: translate(1px, 1px);
+            transform: translate(10px, 10px);
             fill: #010101;
         }
     </style>
@@ -36,14 +36,18 @@
     </clipPath>
     <g clip-path="url(#r)" >
         <g>
-            <rect width="50.660000000000004" fill="#555"/>
-            <text x="25.330000000000002" y="10.0" class="shadow">License</text>
-            <text x="25.330000000000002" y="10.0">License</text>
+            <rect width="50.66" fill="#555"/>
+            <g transform="scale(.1)">
+                <text x="253.3" y="100" textLength="406.6" class="shadow">License</text>
+                <text x="253.3" y="100" textLength="406.6">License</text>
+            </g>
         </g>
-        <g transform="translate(50.660000000000004 0)">
+        <g transform="translate(50.66 0)">
             <rect width="30.68" fill="#dfb317"/>
-            <text x="15.34" y="10.0" class="shadow">MIT</text>
-            <text x="15.34" y="10.0">MIT</text>
+            <g transform="scale(.1)">
+                <text x="153.4" y="100" textLength="206.8" class="shadow">MIT</text>
+                <text x="153.4" y="100" textLength="206.8">MIT</text>
+            </g>
         </g>
         <rect width="100%" height="100%" fill="url(#s)"/>
     </g>

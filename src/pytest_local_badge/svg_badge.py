@@ -82,20 +82,48 @@ def text_length(text) -> float:
     return sum(_width_of_codepoint(ord(ch)) for ch in str(text))
 
 
+def _fmt(value: float) -> str:
+    """Trim numeric attributes to 3 decimal places, dropping trailing zeros.
+
+    `48.290` → `48.29`, `100.0` → `100`. Sub-pixel precision beyond 3
+    decimals is invisible at 20px badge height; clipping it shaves a few
+    bytes off every SVG without changing the rendered output.
+    """
+    return f"{value:.3f}".rstrip("0").rstrip(".")
+
+
 def render(fobj: typing.TextIO, left_txt: str, right_txt: str, color: str):
     left_txt = str(left_txt)
     right_txt = str(right_txt)
     label_color = COLORS.get(color, color)
     title = f"{left_txt}: {right_txt}"
-    left_width = text_length(left_txt) + _HORIZONTAL_PADDING
-    right_width = text_length(right_txt) + _HORIZONTAL_PADDING
+    left_text_w = text_length(left_txt)
+    right_text_w = text_length(right_txt)
+    left_width = left_text_w + _HORIZONTAL_PADDING
+    right_width = right_text_w + _HORIZONTAL_PADDING
     badge_height = 20
+    total_width = _fmt(left_width + right_width)
+    left_width_s = _fmt(left_width)
+    right_width_s = _fmt(right_width)
+    left_text_len_s = _fmt(left_text_w * 10)
+    right_text_len_s = _fmt(right_text_w * 10)
+    left_text_x = _fmt(left_width * 5)
+    right_text_x = _fmt(right_width * 5)
+    text_y = _fmt(badge_height * 5)
+    # Shields.io's glyph-positioning trick: render text inside
+    # `<g transform="scale(.1)">` at 10× coordinates with an explicit
+    # `textLength`. The 10× space lets us express sub-pixel glyph
+    # positions as plain integers, and `textLength` forces the renderer
+    # to fit the string to our anafanafo-measured width instead of
+    # letting it pick its own letter spacing — so badges look identical
+    # across browsers, librsvg, resvg, etc. Font size and shadow offset
+    # are scaled up the same factor so the visible result is unchanged.
     fobj.write(
         textwrap.dedent(f"""
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     xmlns:xlink="http://www.w3.org/1999/xlink"
-                    width="{left_width + right_width}"
+                    width="{total_width}"
                     height="{badge_height}"
                     role="img"
                     aria-label="{xml_escape(title)}"
@@ -110,12 +138,12 @@ def render(fobj: typing.TextIO, left_txt: str, right_txt: str, color: str):
                             dominant-baseline: middle;
                             text-anchor: middle;
                             font-family: Verdana,Geneva,DejaVu Sans,sans-serif;
-                            font-size: 11.4px;
+                            font-size: 110px;
                             fill: #fff;
                         }}
 
                         .shadow {{
-                            transform: translate(1px, 1px);
+                            transform: translate(10px, 10px);
                             fill: #010101;
                         }}
                     </style>
@@ -129,14 +157,18 @@ def render(fobj: typing.TextIO, left_txt: str, right_txt: str, color: str):
                     </clipPath>
                     <g clip-path="url(#r)" >
                         <g>
-                            <rect width="{left_width}" fill="#555"/>
-                            <text x="{left_width / 2}" y="{badge_height / 2}" class="shadow">{xml_escape(left_txt)}</text>
-                            <text x="{left_width / 2}" y="{badge_height / 2}">{xml_escape(left_txt)}</text>
+                            <rect width="{left_width_s}" fill="#555"/>
+                            <g transform="scale(.1)">
+                                <text x="{left_text_x}" y="{text_y}" textLength="{left_text_len_s}" class="shadow">{xml_escape(left_txt)}</text>
+                                <text x="{left_text_x}" y="{text_y}" textLength="{left_text_len_s}">{xml_escape(left_txt)}</text>
+                            </g>
                         </g>
-                        <g transform="translate({left_width} 0)">
-                            <rect width="{right_width}" fill="{label_color}"/>
-                            <text x="{right_width / 2}" y="{badge_height / 2}" class="shadow">{xml_escape(right_txt)}</text>
-                            <text x="{right_width / 2}" y="{badge_height / 2}">{xml_escape(right_txt)}</text>
+                        <g transform="translate({left_width_s} 0)">
+                            <rect width="{right_width_s}" fill="{label_color}"/>
+                            <g transform="scale(.1)">
+                                <text x="{right_text_x}" y="{text_y}" textLength="{right_text_len_s}" class="shadow">{xml_escape(right_txt)}</text>
+                                <text x="{right_text_x}" y="{text_y}" textLength="{right_text_len_s}">{xml_escape(right_txt)}</text>
+                            </g>
                         </g>
                         <rect width="100%" height="100%" fill="url(#s)"/>
                     </g>

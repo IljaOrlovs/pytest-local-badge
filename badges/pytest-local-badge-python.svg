@@ -17,12 +17,12 @@
             dominant-baseline: middle;
             text-anchor: middle;
             font-family: Verdana,Geneva,DejaVu Sans,sans-serif;
-            font-size: 11.4px;
+            font-size: 110px;
             fill: #fff;
         }
 
         .shadow {
-            transform: translate(1px, 1px);
+            transform: translate(10px, 10px);
             fill: #010101;
         }
     </style>
@@ -37,13 +37,17 @@
     <g clip-path="url(#r)" >
         <g>
             <rect width="48.29" fill="#555"/>
-            <text x="24.145" y="10.0" class="shadow">python</text>
-            <text x="24.145" y="10.0">python</text>
+            <g transform="scale(.1)">
+                <text x="241.45" y="100" textLength="382.9" class="shadow">python</text>
+                <text x="241.45" y="100" textLength="382.9">python</text>
+            </g>
         </g>
         <g transform="translate(48.29 0)">
             <rect width="185.81" fill="#007ec6"/>
-            <text x="92.905" y="10.0" class="shadow">3.10 | 3.11 | 3.12 | 3.13 | 3.14</text>
-            <text x="92.905" y="10.0">3.10 | 3.11 | 3.12 | 3.13 | 3.14</text>
+            <g transform="scale(.1)">
+                <text x="929.05" y="100" textLength="1758.1" class="shadow">3.10 | 3.11 | 3.12 | 3.13 | 3.14</text>
+                <text x="929.05" y="100" textLength="1758.1">3.10 | 3.11 | 3.12 | 3.13 | 3.14</text>
+            </g>
         </g>
         <rect width="100%" height="100%" fill="url(#s)"/>
     </g>
