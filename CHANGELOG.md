@@ -5,7 +5,70 @@ All notable changes to **pytest-local-badge** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.1] — 2026-06-08
+
+### Added
+- **Package-metadata badges**, opt-in via `--local-badge-package=DIST`
+  (repeat the flag for multiple distributions). Each badge reads the
+  installed dist's `METADATA` through `importlib.metadata`, so it works
+  for any build backend (setuptools, PDM, hatch, poetry, flit, …) — no
+  `pyproject.toml` lookup required. Output files are prefixed with the
+  PEP 503-canonical package name (e.g. `my-package-version.svg`):
+  - `version` — `md["Version"]`, blue.
+  - `python` — pipe-joined `Programming Language :: Python :: X.Y`
+    classifiers, blue.
+  - `requires-python` — `md["Requires-Python"]` as-is (e.g. `>=3.10`),
+    blue. Useful when you'd rather not enumerate every minor version in
+    classifiers.
+  - `implementation` — pipe-joined CPython/PyPy/Jython/IronPython from
+    `Programming Language :: Python :: Implementation :: X` classifiers,
+    deduplicated, blue.
+  - `license` — final segment of the `License :: ...` trove path with a
+    trailing " License" trimmed (`MIT License` → `MIT`), yellow.
+  - `maturity` — `Development Status :: N - ...` classifier, colour-graded
+    by the trove digit (1–2 red, 3 orange, 4 yellow, 5 brightgreen, 6
+    green, 7 grey).
+  - `framework` — top-level `Framework :: X` names, deduplicated and
+    collapsing sub-version rows like `Framework :: Django :: 4.2`, blue.
+  - `typed` — renders `typed | py.typed` only when `Typing :: Typed` is
+    set; otherwise nothing.
+  - `private` — renders `package | private` (red) only when `Private ::
+    Do Not Upload` is set; otherwise nothing.
+  - **`last-run` session badge** — UTC timestamp of when the session
+    finished, formatted `YYYY-MM-DD HH:MM UTC`. Informational (blue) —
+    useful as a freshness signal in READMEs.
+  - **`os` package-metadata badge** — pipe-joined supported operating
+    systems from `Operating System :: ...` classifiers (final trove
+    segment kept and deduplicated). The catch-all
+    `Operating System :: OS Independent` collapses to a single
+    "OS Independent" value and short-circuits any other OS rows. Blue.
+- `--local-badge-package PACKAGE` CLI option (repeatable via
+  `action="append"`).
+- `blue` (`#007ec6`) added to the badge colour palette.
+- Per-package warning when `--local-badge-package=X` names a distribution
+  that isn't installed — the badge is skipped and the rest of the pytest
+  run is unaffected.
+
+### Changed
+- **SVG renderer matches shields.io glyph positioning**: text is now
+  wrapped in `<g transform="scale(.1)">` with 10× coordinates and an
+  explicit `textLength`, so letter spacing matches the anafanafo-measured
+  widths exactly across browsers / librsvg / resvg. Font size (`110`) and
+  shadow offset (`10px,10px`) scale to keep the visible result unchanged.
+- All SVG numeric attributes are now clipped to 3 decimal places with
+  trailing zeros stripped (`48.290` → `48.29`, `100.0` → `100`) — a small
+  byte-size win per badge with no visible change.
+- README rewritten to document package badges, the new CLI surface, and
+  split the supported-badges table into "session" vs "package-metadata"
+  sections.
+
+### Fixed
+- `--local-badge-package` initially used `nargs="+"`, which greedy-consumed
+  positional test paths when added to pytest `addopts`. Switched to
+  `action="append"` so each value needs its own flag and nothing leaks
+  from neighbouring options.
+
+## [1.2.0] — 2025-06-07
 
 ### Added
 - **Four new badges** built on pytest's own session/terminalreporter

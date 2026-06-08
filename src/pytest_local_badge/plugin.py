@@ -13,7 +13,23 @@ BADGES = {
     "skipped": badges.Skipped,
     "xfailed": badges.XFailed,
     "warnings": badges.Warnings,
+    "last-run": badges.LastRun,
     "duration": badges.Duration,
+}
+
+# Badges sourced from installed package metadata rather than the pytest
+# session. Only emitted when the user passes `--local-badge-package=...`.
+PACKAGE_BADGES = {
+    "python": badges.PythonVersions,
+    "license": badges.License,
+    "private": badges.PrivatePackage,
+    "version": badges.Version,
+    "maturity": badges.DevelopmentStatus,
+    "typed": badges.Typed,
+    "implementation": badges.Implementation,
+    "framework": badges.Framework,
+    "requires-python": badges.RequiresPython,
+    "os": badges.OperatingSystem,
 }
 
 
@@ -32,7 +48,7 @@ def pytest_addoption(parser):
         default=None,
         help="The directory to save local badges to.",
     )
-    all_badges = sorted(BADGES.keys())
+    all_badges = sorted({**BADGES, **PACKAGE_BADGES}.keys())
     group.addoption(
         "--local-badge-generate",
         nargs="+",
@@ -40,7 +56,19 @@ def pytest_addoption(parser):
         default=all_badges,
         help="List of local badges to generate.",
     )
-    for badge_name, badge_cls in BADGES.items():
+    group.addoption(
+        "--local-badge-package",
+        action="append",
+        default=[],
+        metavar="PACKAGE",
+        help=(
+            "Installed distribution name to read metadata from for the "
+            "package-classifier badges (python/license/private/...). Repeat "
+            "for multiple packages — each gets its own set of badges, "
+            "prefixed with the package's canonical name."
+        ),
+    )
+    for badge_name, badge_cls in {**BADGES, **PACKAGE_BADGES}.items():
         badge_cls.pytest_addoption(group, badge_name)
 
 
@@ -76,7 +104,17 @@ class LocalBadgePlugin:
                 stacklevel=1,
             )
             return
+        enabled = set(self.options.local_badge_generate)
         for enabled_badge_name in self.options.local_badge_generate:
-            badge_cls = BADGES[enabled_badge_name]
+            badge_cls = BADGES.get(enabled_badge_name)
+            if badge_cls is None:
+                continue  # package badge — handled below
             badge = badge_cls(self.out_dir, self.options)
             badge.on_sessionfinish(session, exitstatus)
+        packages = getattr(self.options, "local_badge_package", None) or []
+        for package_name in packages:
+            for badge_name, badge_cls in PACKAGE_BADGES.items():
+                if badge_name not in enabled:
+                    continue
+                badge = badge_cls(self.out_dir, self.options, package_name)
+                badge.on_sessionfinish(session, exitstatus)

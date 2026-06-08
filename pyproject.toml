@@ -121,13 +121,13 @@ ignore = ["N802"]
 [tool.ruff.lint.isort]
 order-by-type = true
 known-first-party = ["pytest_local_badge"]
-forced-separate = ["test"]
+forced-separate = ["tests"]
 
 [tool.ruff.format]
 quote-style = "double"
 
 [tool.pyright]
-include = ["src", "test"]
+include = ["src", "tests"]
 exclude = ["**/__pycache__", ".venv", "docs"]
 reportIncompatibleVariableOverride = false
 # pytest-cov exposes the controller/totals dynamically on its _PluggyPlugin instance.
@@ -141,8 +141,8 @@ minversion = "8.4"
 # the plugin's module-level code is missed. `pytest --cov` is still wired
 # in via the local-badge-cov path so the coverage badge keeps rendering
 # under that wrapper.
-addopts = "-v -l --color=yes --local-badge-output-dir badges/"
-testpaths = ["test"]
+addopts = "-v -l --color=yes --local-badge-output-dir badges/ --local-badge-package pytest_local_badge"
+testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
