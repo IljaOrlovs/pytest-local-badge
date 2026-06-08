@@ -1,9 +1,17 @@
+import importlib.metadata
 import pathlib
+import re
 import time
+import warnings
 
 import pytest
 
 from . import svg_badge
+
+
+def _normalize_package_name(name: str) -> str:
+    """PEP 503 canonical name — safe for use as a filename component."""
+    return re.sub(r"[-_.]+", "-", name).lower()
 
 
 def _terminal_stats(session: pytest.Session) -> dict | None:
@@ -320,3 +328,132 @@ class Duration(BadgeBase):
             if seconds <= upper:
                 return colour
         return "red"
+
+
+class PackageBadgeBase(BadgeBase):
+    """Base for badges sourced from an installed distribution's metadata.
+
+    Unlike the session badges, these don't read anything from the pytest
+    run — they pull `Classifier` (and friends) from the installed
+    distribution via `importlib.metadata`. One instance per
+    (package, badge) pair; output filenames are prefixed with the
+    package's PEP 503 canonical name so multiple packages don't collide.
+    """
+
+    badge_name = "UNKNOWN"
+
+    def __init__(self, output_dir: pathlib.Path, options, package_name: str):
+        super().__init__(output_dir, options)
+        self.package_name = package_name
+
+    @property
+    def full_output_file_name(self):
+        slug = _normalize_package_name(self.package_name)
+        return (self.output_dir / f"{slug}-{self.badge_name}.svg").resolve()
+
+    def on_sessionfinish(self, session, exitstatus):
+        try:
+            md = importlib.metadata.metadata(self.package_name)
+        except importlib.metadata.PackageNotFoundError:
+            warnings.warn(
+                f"Package {self.package_name!r} is not installed; "
+                f"skipping {self.badge_name} badge",
+                stacklevel=1,
+            )
+            return
+        classifiers = md.get_all("Classifier") or []
+        self.render_from_metadata(md, classifiers)
+
+    def render_from_metadata(self, md, classifiers: list[str]):
+        raise NotImplementedError(self.__class__.__name__)
+
+
+class PythonVersions(PackageBadgeBase):
+    """Pipe-separated list of supported Python versions from classifiers.
+
+    Reads `Programming Language :: Python :: X.Y` rows. The bare
+    `Programming Language :: Python :: 3` / `:: 3 :: Only` headers and
+    implementation tags (`:: CPython`, `:: PyPy`) are filtered out — they
+    don't carry a concrete X.Y version.
+    """
+
+    badge_name = "python"
+    _VERSION_RE = re.compile(
+        r"""^
+            \s*
+            Programming \s+ Language \s+ :: \s+ Python \s+ :: \s+
+            (\d+\.\d+)
+            \s*
+        $""",
+        re.VERBOSE | re.IGNORECASE,
+    )
+
+    def render_from_metadata(self, md, classifiers):
+        versions = []
+        for _classifier in classifiers:
+            match = self._VERSION_RE.match(_classifier)
+            if match:
+                versions.append(match.group(1))
+        if not versions:
+            return
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="python",
+                right_txt=" | ".join(versions),
+                color="blue",
+            )
+
+
+class License(PackageBadgeBase):
+    """License badge from `License :: ...` classifiers.
+
+    Trims the trailing " License" word so "MIT License" renders as "MIT".
+    If multiple license classifiers are present (rare), the first wins.
+    """
+
+    badge_name = "license"
+
+    def render_from_metadata(self, md, classifiers):
+        label = self._extract(classifiers)
+        if not label:
+            return
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="License",
+                right_txt=label,
+                color="yellow",
+            )
+
+    @staticmethod
+    def _extract(classifiers):
+        for c in classifiers:
+            if not c.startswith("License :: "):
+                continue
+            # Last segment of the trove path is the human-readable name,
+            # e.g. "License :: OSI Approved :: MIT License" -> "MIT License".
+            tail = c.rsplit(" :: ", 1)[-1].strip()
+            return tail.removesuffix(" License").strip() or tail
+        return None
+
+
+class PrivatePackage(PackageBadgeBase):
+    """Renders only when the `Private :: Do Not Upload` classifier is set.
+
+    That classifier is the conventional way to mark a package as not
+    intended for PyPI — if it's present, surface it loudly.
+    """
+
+    badge_name = "private"
+
+    def render_from_metadata(self, md, classifiers):
+        if "Private :: Do Not Upload" not in classifiers:
+            return
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="package",
+                right_txt="private",
+                color="red",
+            )

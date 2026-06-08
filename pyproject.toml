@@ -141,7 +141,7 @@ minversion = "8.4"
 # the plugin's module-level code is missed. `pytest --cov` is still wired
 # in via the local-badge-cov path so the coverage badge keeps rendering
 # under that wrapper.
-addopts = "-v -l --color=yes --local-badge-output-dir badges/"
+addopts = "-v -l --color=yes --local-badge-output-dir badges/ --local-badge-package pytest_local_badge"
 testpaths = ["tests"]
 
 [tool.coverage.run]

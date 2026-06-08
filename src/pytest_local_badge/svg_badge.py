@@ -2,6 +2,7 @@ import bisect
 import importlib.resources
 import json
 import textwrap
+import typing
 from functools import cache
 from xml.sax.saxutils import escape as xml_escape
 
@@ -19,6 +20,7 @@ COLORS = {
     "orange": "#fe7d37",
     "red": "#e05d44",
     "lightgrey": "#9f9f9f",
+    "blue": "#007ec6",
 }
 
 
@@ -80,7 +82,7 @@ def text_length(text) -> float:
     return sum(_width_of_codepoint(ord(ch)) for ch in str(text))
 
 
-def render(fobj, left_txt, right_txt, color):
+def render(fobj: typing.TextIO, left_txt: str, right_txt: str, color: str):
     left_txt = str(left_txt)
     right_txt = str(right_txt)
     label_color = COLORS.get(color, color)

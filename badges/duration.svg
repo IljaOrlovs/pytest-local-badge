@@ -5,7 +5,7 @@
     width="89.81"
     height="20"
     role="img"
-    aria-label="duration: 0.9s"
+    aria-label="duration: 0.8s"
 >
     <style>
         rect {
@@ -26,7 +26,7 @@
             fill: #010101;
         }
     </style>
-    <title>duration: 0.9s</title>
+    <title>duration: 0.8s</title>
     <linearGradient id="s" x2="0" y2="100%">
         <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
         <stop offset="1" stop-opacity=".1"/>
@@ -42,8 +42,8 @@
         </g>
         <g transform="translate(56.1 0)">
             <rect width="33.71" fill="#4c1"/>
-            <text x="16.855" y="10.0" class="shadow">0.9s</text>
-            <text x="16.855" y="10.0">0.9s</text>
+            <text x="16.855" y="10.0" class="shadow">0.8s</text>
+            <text x="16.855" y="10.0">0.8s</text>
         </g>
         <rect width="100%" height="100%" fill="url(#s)"/>
     </g>

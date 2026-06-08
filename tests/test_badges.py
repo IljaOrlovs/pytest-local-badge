@@ -550,3 +550,171 @@ class TestDuration:
         assert kwargs["type"] is float
         assert kwargs["default"] is None
         assert kwargs["metavar"] == "SECONDS"
+
+
+def _stub_metadata(mocker, classifiers, extra=None):
+    """Stub `importlib.metadata.metadata` to return a fake dist's metadata.
+
+    `classifiers` becomes the `Classifier` multi-value field; `extra` is
+    merged in as single-valued headers. Mirrors `email.message.Message`
+    enough to satisfy the badge code under test.
+    """
+    md = mocker.MagicMock(name="metadata")
+    md.get_all.side_effect = lambda key: classifiers if key == "Classifier" else None
+    md.get.side_effect = lambda key, default=None: (extra or {}).get(key, default)
+    md.__getitem__.side_effect = lambda key: (extra or {})[key]
+    return mocker.patch(
+        "pytest_local_badge.badges.importlib.metadata.metadata",
+        return_value=md,
+    )
+
+
+class TestPackageBadgeBase:
+    def test_filename_normalises_package_name(self, badge_output_dir, cli_options):
+        # `Foo.Bar_baz` (legal-but-ugly distribution name) must canonicalise
+        # to `foo-bar-baz` before being used as a filename component —
+        # otherwise multiple installs of the same dist under different
+        # case/separator spellings collide.
+        class _Probe(badges.PackageBadgeBase):
+            badge_name = "probe"
+
+        obj = _Probe(badge_output_dir, cli_options, "Foo.Bar_baz")
+        assert obj.full_output_file_name.name == "foo-bar-baz-probe.svg"
+
+    def test_warns_on_missing_package(
+        self, mocker, badge_output_dir, cli_options, mock_session
+    ):
+        # If the user asks for badges for a package that isn't installed,
+        # warn and move on — don't crash the whole pytest run.
+        mocker.patch(
+            "pytest_local_badge.badges.importlib.metadata.metadata",
+            side_effect=badges.importlib.metadata.PackageNotFoundError("nope"),
+        )
+
+        class _Probe(badges.PackageBadgeBase):
+            badge_name = "probe"
+
+            def render_from_metadata(self, md, classifiers):  # pragma: no cover
+                raise AssertionError("should not be called when package missing")
+
+        obj = _Probe(badge_output_dir, cli_options, "nope")
+        with pytest.warns(UserWarning, match="is not installed"):
+            obj.on_sessionfinish(mock_session, 0)
+
+
+class TestPythonVersionsBadge:
+    @pytest.fixture
+    def badge_obj(self, badge_output_dir, cli_options):
+        return badges.PythonVersions(badge_output_dir, cli_options, "demo-pkg")
+
+    def test_extracts_versions_from_classifiers(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # Mixed bag of `Programming Language :: Python ::` rows — the bare
+        # "3", the "3 :: Only" header, and implementation tags must be
+        # filtered out; only `X.Y` versions survive, in input order.
+        _stub_metadata(
+            mocker,
+            classifiers=[
+                "Programming Language :: Python :: 3",
+                "Programming Language :: Python :: 3 :: Only",
+                "Programming Language :: Python :: 3.10",
+                "Programming Language :: Python :: 3.11",
+                "Programming Language :: Python :: 3.12",
+                "Programming Language :: Python :: Implementation :: CPython",
+                "Topic :: Software Development",  # unrelated row
+            ],
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="python",
+            right_txt="3.10 | 3.11 | 3.12",
+            color="blue",
+        )
+
+    def test_no_render_when_no_version_classifiers(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # A dist that doesn't advertise any specific Python version
+        # produces no badge — silent skip, not an empty badge.
+        _stub_metadata(mocker, classifiers=["Topic :: Software Development"])
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
+
+class TestLicenseBadge:
+    @pytest.fixture
+    def badge_obj(self, badge_output_dir, cli_options):
+        return badges.License(badge_output_dir, cli_options, "demo-pkg")
+
+    @pytest.mark.parametrize(
+        "classifier, expected",
+        [
+            ("License :: OSI Approved :: MIT License", "MIT"),
+            ("License :: OSI Approved :: Apache Software License", "Apache Software"),
+            ("License :: OSI Approved :: BSD License", "BSD"),
+            # No trailing " License" suffix → render as-is.
+            ("License :: Public Domain", "Public Domain"),
+        ],
+    )
+    def test_extracts_license(
+        self,
+        mocker,
+        mock_badge_render,
+        badge_obj,
+        mock_session,
+        classifier,
+        expected,
+    ):
+        _stub_metadata(mocker, classifiers=[classifier])
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="License",
+            right_txt=expected,
+            color="yellow",
+        )
+
+    def test_no_render_without_license_classifier(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        _stub_metadata(mocker, classifiers=["Topic :: Software Development"])
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
+
+
+class TestPrivatePackageBadge:
+    @pytest.fixture
+    def badge_obj(self, badge_output_dir, cli_options):
+        return badges.PrivatePackage(badge_output_dir, cli_options, "demo-pkg")
+
+    def test_renders_when_marker_present(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        _stub_metadata(
+            mocker,
+            classifiers=[
+                "Private :: Do Not Upload",
+                "Programming Language :: Python :: 3.12",
+            ],
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="package",
+            right_txt="private",
+            color="red",
+        )
+
+    def test_no_render_when_marker_absent(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # Public packages skip the badge entirely — it's only meaningful as
+        # a "don't accidentally `twine upload` this" signal.
+        _stub_metadata(
+            mocker,
+            classifiers=["License :: OSI Approved :: MIT License"],
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_not_called()
