@@ -27,6 +27,10 @@ Package-metadata badges (rendered from the installed dist's classifiers / `METAD
 ![OS](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/pytest-local-badge-os.svg)
 ![Typed](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/pytest-local-badge-typed.svg)
 
+Custom:
+![Hello](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/hello.svg)
+![This](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/this.svg)
+
 > **Self-hosted pytest & package badges** — tests, coverage, skipped, xfailed, warnings, duration, last-run, plus version/python/license/maturity/os and more pulled straight from your installed dist's metadata. No shields.io, no Codecov, no third-party uptime to depend on — just SVG files committed alongside your code.
 
 ## Why?
@@ -136,6 +140,60 @@ Then in your `README.md`:
 ![OS](badges/my-package-os.svg)
 ```
 
+### Custom badges (`--local-badge-custom`)
+
+Sometimes you want a badge for a value that isn't a pytest stat or a classifier — a git commit, a deploy timestamp, an arbitrary number computed by a CI step. Three input channels feed the same `LABEL | MESSAGE` shape, designed to be glued together in shell scripts:
+
+```bash
+# 1. CLI — repeatable, simplest for one-offs and loops:
+pytest --local-badge-output-dir badges/ \
+       --local-badge-custom "commit=$(git rev-parse --short HEAD)" \
+       --local-badge-custom "branch=$(git rev-parse --abbrev-ref HEAD):lightgrey" \
+       --local-badge-custom "deployed=2026-06-08T14:32 UTC"
+```
+
+The syntax is `LABEL=MESSAGE[:COLOR]`. The trailing `:COLOR` is parsed only when COLOR is a known palette name (`brightgreen`, `green`, `yellowgreen`, `yellow`, `orange`, `red`, `lightgrey`, `blue`) or a `#hex` literal — otherwise it's part of the message. So `deployed=2026-06-08T14:32:00Z` keeps the timestamp intact; the colour defaults to `blue`.
+
+```bash
+# 2. File — JSON list or JSONL (auto-detected). Best for CI scripts
+#    that generate many badges:
+pytest --local-badge-output-dir badges/ --local-badge-custom-file badges/custom.json
+```
+
+```json
+[
+  {"label": "commit", "message": "abc1234"},
+  {"label": "deploy", "message": "2026-06-08T14:32 UTC", "color": "yellow"},
+  {"label": "build SHA", "message": "abc1234", "color": "#ff8800", "slug": "sha"}
+]
+```
+
+…or the JSONL form, which is friendlier to append-driven CI scripts (`jq -nc ... >> file.jsonl` in a loop):
+
+```jsonl
+# comments and blank lines are skipped
+{"label": "commit", "message": "abc1234"}
+{"label": "deploy", "message": "2026-06-08T14:32 UTC", "color": "yellow"}
+```
+
+The parser tries `json.loads` over the whole file first; on `JSONDecodeError` it falls back to line-by-line.
+
+```bash
+# 3. Environment variables — drop into a GitHub Actions `env:` block
+#    with zero CLI changes:
+PYTEST_LOCAL_BADGE_CUSTOM_COMMIT=abc1234 \
+PYTEST_LOCAL_BADGE_CUSTOM_BUILD_SHA="def5678:#ff8800" \
+   pytest --local-badge-output-dir badges/
+```
+
+The `PYTEST_LOCAL_BADGE_CUSTOM_<LABEL>` prefix is stripped, the rest is lowercased and `_` → `-`, so `..._BUILD_SHA` becomes label `build-sha` (and file `build-sha.svg`).
+
+**Merge order**: env → file → CLI. The same slug from a later source overrides the earlier one — handy when a file holds your defaults and you want one CLI override per-run.
+
+**Empty messages are skipped silently** by default — lets `--local-badge-custom "commit=$(git rev-parse --short HEAD 2>/dev/null)"` work in tarball checkouts where the subshell returns empty. Pass `--local-badge-custom-strict` to flip that to a hard error in CI.
+
+**Reserved labels** (`tests`, `coverage`, `skipped`, `xfailed`, `warnings`, `duration`, `last-run`) can't be used — they would silently overwrite the built-in session badges. Use the file form's `slug` field if you need to rename around a collision.
+
 ### Make it permanent
 
 Add it to your `pyproject.toml` so every `pytest` run keeps the badges in sync:
@@ -162,6 +220,15 @@ addopts = "--cov=my_package --local-badge-output-dir badges/"
                                  is also set.
 --local-badge-package PACKAGE    Installed distribution name to read metadata from.
                                  Repeat the flag for more than one package.
+--local-badge-custom 'LABEL=MESSAGE[:COLOR]'
+                                 Render an arbitrary 'LABEL | MESSAGE' badge.
+                                 Repeatable. Trailing ':COLOR' must be a palette
+                                 name or `#hex`; otherwise the whole value is the
+                                 message and colour defaults to blue.
+--local-badge-custom-file PATH   Read custom badges from a JSON list or JSONL file
+                                 (auto-detected). Repeatable.
+--local-badge-custom-strict      Treat empty MESSAGE values as errors rather than
+                                 silently skipping them.
 --local-badge-duration-max SECONDS
                                  Duration "budget" for the `duration` badge. When
                                  set, colour thresholds scale proportionally — e.g.
