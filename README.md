@@ -15,7 +15,7 @@ Session badges (regenerated every pytest run):
 ![Duration](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/duration.svg)
 ![Last run](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/last-run.svg)
 
-Package-metadata badges (rendered from the installed dist's classifiers / `METADATA`):
+### Package-metadata badges (rendered from the installed dist's classifiers / `METADATA`)
 
 ![Version](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/pytest-local-badge-version.svg)
 ![Python](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/pytest-local-badge-python.svg)
@@ -27,7 +27,8 @@ Package-metadata badges (rendered from the installed dist's classifiers / `METAD
 ![OS](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/pytest-local-badge-os.svg)
 ![Typed](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/pytest-local-badge-typed.svg)
 
-Custom:
+### Custom
+
 ![Hello](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/hello.svg)
 ![This](https://raw.githubusercontent.com/IljaOrlovs/pytest-local-badge/main/badges/this.svg)
 
