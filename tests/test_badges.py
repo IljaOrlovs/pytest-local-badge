@@ -1,6 +1,7 @@
 import argparse
 import json
 import pathlib
+import warnings
 
 import pytest
 
@@ -702,6 +703,82 @@ class TestLicenseBadge:
             mocker.ANY,
             left_txt="License",
             right_txt=expected,
+            color="yellow",
+        )
+
+    @pytest.mark.parametrize(
+        "expression",
+        ["MIT", "Apache-2.0", "Apache-2.0 OR MIT"],
+    )
+    def test_prefers_license_expression(
+        self, mocker, mock_badge_render, badge_obj, mock_session, expression
+    ):
+        # Core metadata 2.4's `License-Expression` is rendered verbatim.
+        _stub_metadata(
+            mocker,
+            classifiers=[],
+            extra={"License-Expression": expression},
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="License",
+            right_txt=expression,
+            color="yellow",
+        )
+
+    def test_expression_wins_without_warning_when_matching(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # Both present and identical (case-insensitively) → render the
+        # expression, no warning.
+        _stub_metadata(
+            mocker,
+            classifiers=["License :: MIT"],
+            extra={"License-Expression": "MIT"},
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="License",
+            right_txt="MIT",
+            color="yellow",
+        )
+
+    def test_warns_when_both_present_and_differ(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # Both set but not verbatim-equal → warn, but still render the
+        # authoritative SPDX expression.
+        _stub_metadata(
+            mocker,
+            classifiers=["License :: OSI Approved :: BSD License"],
+            extra={"License-Expression": "MIT"},
+        )
+        with pytest.warns(UserWarning, match="License-Expression"):
+            badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="License",
+            right_txt="MIT",
+            color="yellow",
+        )
+
+    def test_falls_back_to_classifier(
+        self, mocker, mock_badge_render, badge_obj, mock_session
+    ):
+        # No `License-Expression` → legacy trove classifier is used.
+        _stub_metadata(
+            mocker,
+            classifiers=["License :: OSI Approved :: MIT License"],
+        )
+        badge_obj.on_sessionfinish(mock_session, 0)
+        mock_badge_render.assert_called_once_with(
+            mocker.ANY,
+            left_txt="License",
+            right_txt="MIT",
             color="yellow",
         )
 

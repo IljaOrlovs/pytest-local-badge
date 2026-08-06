@@ -96,11 +96,18 @@ class PythonVersions(PackageBadgeBase):
 
 
 class License(PackageBadgeBase):
-    """License badge from `License :: ...` classifiers.
+    """License badge, preferring the `License-Expression` metadata field.
 
-    Captures the final trove segment and strips a trailing " License"
-    suffix so "MIT License" renders as "MIT". If multiple license
-    classifiers are present (rare), the first match wins.
+    Core metadata 2.4 deprecates the `License :: ...` trove classifiers in
+    favour of a single SPDX `License-Expression` field, which is the form
+    the packaging spec now recommends. We render that verbatim when
+    present (e.g. `MIT`, `Apache-2.0 OR MIT`) and fall back to the legacy
+    classifiers otherwise.
+
+    For the classifier fallback, captures the final trove segment and
+    strips a trailing " License" suffix so "MIT License" renders as "MIT".
+    If multiple license classifiers are present (rare), the first match
+    wins.
     """
 
     badge_name = "license"
@@ -117,18 +124,47 @@ class License(PackageBadgeBase):
     )
 
     def render_from_metadata(self, md, classifiers):
+        expression = md.get("License-Expression")
+        expression = str(expression).strip() if expression else ""
+
+        classifier_value = ""
         for c in classifiers:
             match = self._RE.match(c)
-            if not match:
-                continue
-            with self.full_output_file_name.open("w") as fout:
-                svg_badge.render(
-                    fout,
-                    left_txt="License",
-                    right_txt=match.group(1),
-                    color="yellow",
-                )
-            return
+            if match:
+                classifier_value = match.group(1)
+                break
+
+        # A package should declare its license one way or the other, so if
+        # both are set and they don't match verbatim, warn rather than
+        # guess which spelling the maintainer meant. The comparison is a
+        # naive case-insensitive one — `Apache-2.0` vs `Apache Software`
+        # will trip it, but that pairing is itself the misconfiguration
+        # worth flagging.
+        if (
+            expression
+            and classifier_value
+            and expression.casefold() != classifier_value.casefold()
+        ):
+            warnings.warn(
+                f"Package {self.package_name!r} declares both "
+                f"License-Expression ({expression!r}) and a License "
+                f"classifier ({classifier_value!r}); using "
+                f"License-Expression",
+                stacklevel=1,
+            )
+
+        chosen = expression or classifier_value
+        if chosen:
+            self._render(chosen)
+
+    def _render(self, right_txt: str):
+        with self.full_output_file_name.open("w") as fout:
+            svg_badge.render(
+                fout,
+                left_txt="License",
+                right_txt=right_txt,
+                color="yellow",
+            )
 
 
 class PrivatePackage(PackageBadgeBase):
